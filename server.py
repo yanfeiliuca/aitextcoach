@@ -188,6 +188,8 @@ class APIHandler(BaseHTTPRequestHandler):
             self.serve_file('index.html', 'text/html')
         elif self.path == '/index-ab-test.html':
             self.serve_file('index-ab-test.html', 'text/html')
+        elif self.path == '/blog' or self.path == '/blog/':
+            self.serve_file('blog/index.html', 'text/html')
         elif self.path.startswith('/blog/'):
             self.serve_file(self.path.lstrip('/'), 'text/html')
         elif self.path == '/sitemap.xml':
