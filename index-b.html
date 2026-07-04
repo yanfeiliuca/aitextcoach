@@ -213,7 +213,8 @@
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> History & saves</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Batch processing</li>
           </ul>
-          <button class="w-full mt-8 py-3 px-4 bg-rose-500 text-white text-sm font-medium hover:bg-rose-400 transition">Upgrade to Pro →</button>
+          <button onclick="showPayPalPreview()" class="w-full mt-8 py-3 px-4 bg-rose-500 text-white text-sm font-medium hover:bg-rose-400 transition">Upgrade to Pro →</button>
+          <p class="text-[10px] text-white/40 mt-2 text-center">PayPal integration coming soon</p>
         </div>
       </div>
     </div>
@@ -305,6 +306,10 @@
       const aiPatterns = (text.match(/\b(furthermore|moreover|additionally|in conclusion|it is important to note|it should be noted)\b/gi) || []).length;
       if (aiPatterns > 2) score -= 10;
       return Math.max(0, Math.min(100, score));
+    }
+
+    function showPayPalPreview() {
+      alert('PayPal integration coming soon! We're preparing a secure checkout. Stay tuned.');
     }
 
     async function enhance() {
