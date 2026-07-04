@@ -125,17 +125,8 @@
           </div>
 
           <!-- Scores -->
-          <div id="scores" class="grid grid-cols-2 gap-6 pt-4 border-t border-line">
-            <div>
-              <div class="flex justify-between text-sm mb-2">
-                <span class="text-muted">Readability</span>
-                <span id="readabilityScore" class="font-medium text-ink">0/100</span>
-              </div>
-              <div class="h-[2px] bg-line overflow-hidden">
-                <div id="readabilityBar" class="h-full bg-charcoal-800 transition-all" style="width: 0%"></div>
-              </div>
-            </div>
-            <div>
+          <div id="scores" class="pt-4 border-t border-line">
+            <div class="max-w-md mx-auto">
               <div class="flex justify-between text-sm mb-2">
                 <span class="text-muted">Human-like Score</span>
                 <span id="humanScore" class="font-medium text-ink">0/100</span>
@@ -293,36 +284,6 @@
       });
     }
 
-    function countSyllables(word) {
-      word = word.toLowerCase().replace(/[^a-z]/g, '');
-      if (word.length <= 3) return 1;
-      // Count vowel groups
-      let count = 0;
-      let wasVowel = false;
-      for (const char of word) {
-        const isVowel = /[aeiouy]/.test(char);
-        if (isVowel && !wasVowel) count++;
-        wasVowel = isVowel;
-      }
-      // Silent e at end
-      if (word.endsWith('e') && count > 1) count--;
-      // le at end often adds a syllable
-      if (word.endsWith('le') && word.length > 2 && !/[aeiou]/.test(word[word.length - 3])) count++;
-      return Math.max(1, count);
-    }
-
-    function calculateReadability(text) {
-      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-      const words = text.split(/\s+/).filter(w => w.length > 0);
-      const wordCount = words.length;
-      if (sentences === 0 || wordCount === 0) return 0;
-      const syllables = words.reduce((count, word) => count + countSyllables(word), 0);
-      const avgSentenceLength = wordCount / sentences;
-      const avgSyllablesPerWord = syllables / wordCount;
-      const flesch = 206.835 - 1.015 * avgSentenceLength - 84.6 * avgSyllablesPerWord;
-      return Math.max(0, Math.min(100, Math.round(flesch)));
-    }
-
     function calculateHumanLikeScore(text) {
       let score = 70;
       const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
@@ -388,11 +349,8 @@
         document.getElementById('beforeText').textContent = input;
         document.getElementById('afterText').textContent = data.result;
         
-        const readability = calculateReadability(data.result);
         const humanLike = calculateHumanLikeScore(data.result);
         
-        document.getElementById('readabilityScore').textContent = readability + '/100';
-        document.getElementById('readabilityBar').style.width = readability + '%';
         document.getElementById('humanScore').textContent = humanLike + '/100';
         document.getElementById('humanBar').style.width = humanLike + '%';
         
