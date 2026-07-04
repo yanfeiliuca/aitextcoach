@@ -293,17 +293,35 @@
       });
     }
 
+    function countSyllables(word) {
+      word = word.toLowerCase().replace(/[^a-z]/g, '');
+      if (word.length <= 3) return 1;
+      // Count vowel groups
+      let count = 0;
+      let wasVowel = false;
+      for (const char of word) {
+        const isVowel = /[aeiouy]/.test(char);
+        if (isVowel && !wasVowel) count++;
+        wasVowel = isVowel;
+      }
+      // Silent e at end
+      if (word.endsWith('e') && count > 1) count--;
+      // le at end often adds a syllable
+      if (word.endsWith('le') && word.length > 2 && !/[aeiou]/.test(word[word.length - 3])) count++;
+      return Math.max(1, count);
+    }
+
     function calculateReadability(text) {
       const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-      const words = text.split(/\s+/).filter(w => w.length > 0).length;
-      const syllables = text.split(/\s+/).reduce((count, word) => {
-        return count + (word.match(/[aeiouAEIOU]/g) || []).length;
-      }, 0);
-      if (sentences === 0 || words === 0) return 0;
-      const avgSentenceLength = words / sentences;
-      const avgSyllablesPerWord = syllables / words;
+      const words = text.split(/\s+/).filter(w => w.length > 0);
+      const wordCount = words.length;
+      if (sentences === 0 || wordCount === 0) return 0;
+      const syllables = words.reduce((count, word) => count + countSyllables(word), 0);
+      const avgSentenceLength = wordCount / sentences;
+      const avgSyllablesPerWord = syllables / wordCount;
       const flesch = 206.835 - 1.015 * avgSentenceLength - 84.6 * avgSyllablesPerWord;
-      return Math.max(0, Math.min(100, Math.round(flesch)));
+      // Add minimum floor so short/complex texts don't all show 0
+      return Math.max(10, Math.min(100, Math.round(flesch)));
     }
 
     function calculateHumanLikeScore(text) {
