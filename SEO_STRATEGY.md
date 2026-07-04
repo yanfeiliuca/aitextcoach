@@ -6,6 +6,45 @@
 
 ---
 
+## Core SEO Doctrine
+
+**Primary Strategy: High-Conversion, Low-Competition Long-Tail Keywords**
+
+> This rule is **non-negotiable** for all content, copy, and meta descriptions across the entire site. Every piece of writing must be validated against this criterion before publication.
+
+### What This Means in Practice
+
+**We DO target:**
+- `how to make AI text sound human` (how-to intent, low competition)
+- `AI text rewriter for emails` (specific use case, low competition)
+- `remove AI detection patterns from writing` (problem-solution, low competition)
+- `why does my AI writing sound robotic` (question format, low competition)
+- `make ChatGPT output less formal` (tool-specific, low competition)
+
+**We DO NOT target (unless explicitly approved):**
+- `AI humanizer` (high competition, tool-focused)
+- `bypass AI detection` (high competition, reputation risk)
+- `undetectable AI writing` (high competition, spammy associations)
+- `AI text generator` (generic, dominated by ChatGPT/OpenAI)
+
+### Validation Checklist (Before Publishing Any Content)
+
+- [ ] Is the primary keyword 4+ words long?
+- [ ] Is the intent educational/tutorial rather than purely transactional?
+- [ ] Are there fewer than 3 dedicated blog posts from DA 50+ sites ranking for this exact phrase?
+- [ ] Does the keyword naturally include a specific use case, audience, or context?
+- [ ] Would someone searching this phrase be ready to try a tool after reading?
+
+### Content Type Priority
+
+1. **How-to tutorials** (highest priority) — "How to X" format
+2. **Problem-solution guides** — "Why does X happen / How to fix X"
+3. **Use-case specific** — "AI text for [specific scenario]"
+4. **Comparison/education** — "What makes AI text sound robotic"
+5. **Tool pages** (lowest priority for new content) — only after tutorial content establishes authority
+
+---
+
 ## 1. Keyword Research (Based on Market Analysis)
 
 ### Primary Keywords (High Volume, High Intent)
