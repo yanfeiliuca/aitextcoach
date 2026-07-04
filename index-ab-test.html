@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Text Coach — A/B Design Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Cormorant+Garamond:wght@400;600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .font-serif-a { font-family: 'Cormorant Garamond', Georgia, serif; }
+    .font-serif-b { font-family: 'Playfair Display', Georgia, serif; }
+    .font-sans { font-family: 'Inter', system-ui, sans-serif; }
+    
+    .preview-a { background: #F7F5F0; color: #1A1A2E; }
+    .preview-b { background: #FAF9F6; color: #1A1A1A; }
+    
+    .accent-a { color: #C9A96E; }
+    .accent-b { color: #B76E79; }
+    
+    .btn-a { background: #0A1628; color: white; }
+    .btn-b { background: #1C1C1E; color: white; }
+    
+    .card-a { border: 1px solid #E8E4DC; }
+    .card-b { border: 1px solid #E5E5E5; }
+    
+    .preview-frame {
+      height: 400px;
+      overflow: hidden;
+      position: relative;
+    }
+    .preview-frame::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--bg));
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-white font-sans text-gray-900">
+
+  <!-- Header -->
+  <header class="border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-semibold">AI Text Coach</h1>
+        <p class="text-sm text-gray-500">A/B Design Test — Choose your direction</p>
+      </div>
+      <span class="text-xs px-3 py-1 bg-gray-100 rounded-full text-gray-600">Internal Review</span>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-12">
+    
+    <!-- Intro -->
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-semibold mb-3">Two Directions. One Choice.</h2>
+      <p class="text-gray-600 max-w-lg mx-auto">Both designs share the same goal: <strong>low-key luxury</strong> — refined, confident, never loud. The difference is in the emotional temperature.</p>
+    </div>
+
+    <!-- Side by Side -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+      
+      <!-- Direction A -->
+      <div class="group cursor-pointer" onclick="window.location.href='/index-a.html'">
+        <div class="preview-a preview-frame rounded-t-lg p-6" style="--bg: #F7F5F0">
+          <!-- Mini hero preview -->
+          <div class="text-center">
+            <span class="text-[10px] tracking-[0.2em] uppercase accent-a font-medium">AI Text Enhancement</span>
+            <h3 class="font-serif-a text-2xl font-semibold mt-2 leading-tight">Make Your AI Writing<br><em class="text-[#1E3A5F]">Sound Human</em></h3>
+            <div class="mt-4 mx-auto w-48 h-8 bg-white/50 border border-[#E8E4DC] rounded flex items-center px-3">
+              <span class="text-[10px] text-gray-500">Paste your text here...</span>
+            </div>
+            <div class="mt-3 mx-auto w-48 h-8 btn-a rounded flex items-center justify-center">
+              <span class="text-[10px] text-white">Enhance My Text</span>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 border-t-0 rounded-b-lg p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold text-lg">Direction A</h3>
+            <span class="text-xs px-2 py-1 bg-[#0A1628] text-white rounded">Classic</span>
+          </div>
+          <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+            <strong>Deep Navy + Champagne Gold.</strong> Like a bespoke suit from Savile Row or the lobby of a Four Seasons. 
+            Authority, tradition, quiet confidence. For users who want to feel they are using a <em>serious tool</em>.
+          </p>
+          <div class="flex gap-3 mb-4">
+            <div class="w-8 h-8 rounded-full bg-[#0A1628]" title="Navy"></div>
+            <div class="w-8 h-8 rounded-full bg-[#C9A96E]" title="Champagne Gold"></div>
+            <div class="w-8 h-8 rounded-full bg-[#F7F5F0] border border-gray-200" title="Ivory"></div>
+          </div>
+          <a href="/index-a.html" class="inline-flex items-center gap-2 text-sm font-medium text-[#0A1628] hover:text-[#C9A96E] transition">
+            View Full Version
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Direction B -->
+      <div class="group cursor-pointer" onclick="window.location.href='/index-b.html'">
+        <div class="preview-b preview-frame rounded-t-lg p-6" style="--bg: #FAF9F6">
+          <!-- Mini hero preview -->
+          <div class="text-center">
+            <span class="text-[10px] tracking-[0.2em] uppercase accent-b font-medium">AI Text Enhancement</span>
+            <h3 class="font-serif-b text-2xl font-semibold mt-2 leading-tight">Make Your AI Writing<br><em class="text-[#3A3A3C]">Sound Human</em></h3>
+            <div class="mt-4 mx-auto w-48 h-8 bg-white/50 border border-[#E5E5E5] rounded flex items-center px-3">
+              <span class="text-[10px] text-gray-500">Paste your text here...</span>
+            </div>
+            <div class="mt-3 mx-auto w-48 h-8 btn-b rounded flex items-center justify-center">
+              <span class="text-[10px] text-white">Enhance My Text</span>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 border-t-0 rounded-b-lg p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold text-lg">Direction B</h3>
+            <span class="text-xs px-2 py-1 bg-[#1C1C1E] text-white rounded">Modern</span>
+          </div>
+          <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+            <strong>Charcoal + Warm Rose Gold.</strong> Like an Aesop store interior or a Blue Bottle Coffee bar. 
+            Warm, approachable, design-conscious. For users who want to feel they are using a <em>beautiful product</em>.
+          </p>
+          <div class="flex gap-3 mb-4">
+            <div class="w-8 h-8 rounded-full bg-[#1C1C1E]" title="Charcoal"></div>
+            <div class="w-8 h-8 rounded-full bg-[#B76E79]" title="Rose Gold"></div>
+            <div class="w-8 h-8 rounded-full bg-[#FAF9F6] border border-gray-200" title="Cream"></div>
+          </div>
+          <a href="/index-b.html" class="inline-flex items-center gap-2 text-sm font-medium text-[#1C1C1E] hover:text-[#B76E79] transition">
+            View Full Version
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="border border-gray-200 rounded-lg overflow-hidden mb-12">
+      <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+        <h3 class="font-semibold">At a Glance</h3>
+      </div>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="px-6 py-3 text-left font-medium text-gray-500">Attribute</th>
+            <th class="px-6 py-3 text-left font-medium" style="color: #0A1628">Direction A</th>
+            <th class="px-6 py-3 text-left font-medium" style="color: #1C1C1E">Direction B</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-gray-100">
+            <td class="px-6 py-3 text-gray-600">Vibe</td>
+            <td class="px-6 py-3">Classic authority, like a private bank</td>
+            <td class="px-6 py-3">Modern warmth, like a design studio</td>
+          </tr>
+          <tr class="border-b border-gray-100">
+            <td class="px-6 py-3 text-gray-600">Color Temperature</td>
+            <td class="px-6 py-3">Cool undertone (blue-black)</td>
+            <td class="px-6 py-3">Warm undertone (neutral gray)</td>
+          </tr>
+          <tr class="border-b border-gray-100">
+            <td class="px-6 py-3 text-gray-600">Accent Feel</td>
+            <td class="px-6 py-3">Prestige, heritage, luxury goods</td>
+            <td class="px-6 py-3">Self-care, boutique, artisanal</td>
+          </tr>
+          <tr class="border-b border-gray-100">
+            <td class="px-6 py-3 text-gray-600">Typography</td>
+            <td class="px-6 py-3">Cormorant Garamond + Inter</td>
+            <td class="px-6 py-3">Playfair Display + DM Sans</td>
+          </tr>
+          <tr class="border-b border-gray-100">
+            <td class="px-6 py-3 text-gray-600">Best For</td>
+            <td class="px-6 py-3">Academic, business, professional users</td>
+            <td class="px-6 py-3">Creators, freelancers, writers</td>
+          </tr>
+          <tr>
+            <td class="px-6 py-3 text-gray-600">Anti-Slop Score</td>
+            <td class="px-6 py-3"><span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Zero AI slop detected</td>
+            <td class="px-6 py-3"><span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Zero AI slop detected</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Decision -->
+    <div class="text-center py-8 border-t border-gray-200">
+      <p class="text-gray-600 mb-4">Both versions are live and functional. Click any card above to test the full experience.</p>
+      <p class="text-sm text-gray-400">Current default: <a href="/" class="underline hover:text-gray-600">Original blue design</a></p>
+    </div>
+
+  </main>
+
+</body>
+</html>
