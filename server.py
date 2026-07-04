@@ -1,32 +1,41 @@
 #!/usr/bin/env python3
 """
-AI Text Coach - Production Server
-Compatible with Render.com, Railway, Heroku, or any Python host
+AI Text Coach - Production Server with PayPal & Quota
+Compatible with Render.com free tier
 """
 
 import json
 import os
 import sys
+import time
 import urllib.request
 import urllib.error
+import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-# Read API key from environment variable (secure)
+# ============ CONFIG ============
 API_KEY = os.environ.get("GOOGLE_API_KEY", "")
-if not API_KEY:
-    print("⚠️  WARNING: GOOGLE_API_KEY not set. API will not work.")
-    print("   Set it with: export GOOGLE_API_KEY=your_key_here")
+PAYPAL_CLIENT_ID = os.environ.get("PAYPAL_CLIENT_ID", "")
+PAYPAL_CLIENT_SECRET = os.environ.get("PAYPAL_CLIENT_SECRET", "")
+PAYPAL_MODE = os.environ.get("PAYPAL_MODE", "sandbox")
+PAYPAL_PLAN_ID = os.environ.get("PAYPAL_PLAN_ID", "")
 
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + API_KEY
+PAYPAL_API = "https://api.paypal.com" if PAYPAL_MODE == "live" else "https://api.sandbox.paypal.com"
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
 
+# MVP: In-memory storage (resets on deploy/restart — acceptable for early stage)
+pro_users = set()          # emails that have paid
+usage_today = {}           # ip_or_email -> chars_used_today
+FREE_DAILY_LIMIT = 5000    # chars per day
+
+# ============ PROMPTS ============
 PROMPTS = {
     "academic": """Rewrite the following text in an academic style suitable for college essays and research papers.
 - Use formal, precise vocabulary
 - Maintain an objective, analytical tone
 - Use passive voice where appropriate for formality
-- Include transitional phrases between paragraphs
 - Avoid contractions and colloquialisms entirely
-- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note", "It should be noted"
+- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note"
 - Keep the original meaning intact
 - Do NOT add new information or facts
 
@@ -36,33 +45,28 @@ Text: {input}""",
 - Use clear, action-oriented language
 - Keep sentences concise and direct
 - Use active voice for stronger statements
-- Include specific, measurable outcomes where possible
 - Maintain a professional but approachable tone
-- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note", "It should be noted"
+- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note"
 - Keep the original meaning intact
 - Do NOT add new information or facts
 
 Text: {input}""",
 
     "creative": """Rewrite the following text in a creative, engaging style suitable for blogs, stories, and marketing copy.
-- Use vivid imagery and sensory details, but keep it grounded and authentic (avoid purple prose)
+- Use vivid imagery and sensory details, but keep it grounded
 - Vary sentence length for rhythm and flow
 - Include emotional resonance
-- Use "show, don't tell" techniques
-- Make the writing memorable but believable
-- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note", "It should be noted"
+- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note"
 - Keep the original meaning intact
 - Do NOT add new information or facts
 
 Text: {input}""",
 
-    "casual": """Rewrite the following text in a casual, conversational style suitable for social media, personal blogs, and friendly communication.
+    "casual": """Rewrite the following text in a casual, conversational style suitable for social media and personal communication.
 - Use everyday language and natural phrasing
-- Include contractions and colloquial expressions where appropriate
+- Include contractions and colloquial expressions
 - Write as if talking to a friend over coffee
-- Keep it relaxed, approachable, and authentic
-- Use humor or personal touches where natural
-- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note", "It should be noted"
+- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note"
 - Keep the original meaning intact
 - Do NOT add new information or facts
 
@@ -73,40 +77,96 @@ Text: {input}""",
 - Remove ALL redundant words and phrases
 - Use stronger, more specific verbs
 - Cut filler words (very, really, basically, actually, etc.)
-- Keep only essential information and key points
-- Aim for maximum clarity with minimum word count
-- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note", "It should be noted"
+- AVOID: "Furthermore", "Moreover", "Additionally", "In conclusion", "It is important to note"
 - Do NOT add new information or facts
 
 Text: {input}""",
 }
 
+ALL_STYLES_FREE = ["academic", "business", "creative", "casual", "concise"]
+FREE_STYLES = ["casual", "concise"]
+
 
 def call_gemini(text, style):
-    """Call Gemini API directly using urllib"""
-    prompt = PROMPTS.get(style, PROMPTS["concise"]).replace("{input}", text)
-    
-    data = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}]
-    }).encode('utf-8')
-    
-    req = urllib.request.Request(
-        GEMINI_URL,
-        data=data,
-        headers={'Content-Type': 'application/json'},
-        method='POST'
-    )
-    
+    prompt = PROMPTS.get(style, PROMPTS["casual"]).replace("{input}", text)
+    data = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
+    req = urllib.request.Request(GEMINI_URL, data=data, headers={'Content-Type': 'application/json'}, method='POST')
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            result = json.loads(response.read().decode('utf-8'))
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode())
             return result['candidates'][0]['content']['parts'][0]['text'].strip()
     except urllib.error.HTTPError as e:
-        error_body = e.read().decode('utf-8')
-        raise Exception(f"API Error: {error_body}")
+        raise Exception(f"API Error: {e.read().decode()}")
     except Exception as e:
         raise Exception(f"Failed to call Gemini: {str(e)}")
 
+
+def get_client_ip(headers):
+    """Extract client IP from headers (best effort)"""
+    forwarded = headers.get('X-Forwarded-For', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    real_ip = headers.get('X-Real-Ip', '')
+    if real_ip:
+        return real_ip
+    return 'anonymous'
+
+
+def check_quota(email, ip, text_length):
+    """Check if user can use the service. Returns (allowed, remaining, is_pro)"""
+    # Pro users always allowed
+    if email and email.lower() in pro_users:
+        return (True, -1, True)
+    
+    # Use email as key if provided, otherwise IP
+    key = email.lower() if email else ip
+    today = time.strftime("%Y-%m-%d")
+    usage_key = f"{key}:{today}"
+    
+    used = usage_today.get(usage_key, 0)
+    if used + text_length > FREE_DAILY_LIMIT:
+        remaining = max(0, FREE_DAILY_LIMIT - used)
+        return (False, remaining, False)
+    
+    usage_today[usage_key] = used + text_length
+    remaining = FREE_DAILY_LIMIT - usage_today[usage_key]
+    return (True, remaining, False)
+
+
+def verify_paypal_subscription(subscription_id):
+    """Verify subscription with PayPal API (MVP: basic token auth)"""
+    if not PAYPAL_CLIENT_ID or not PAYPAL_CLIENT_SECRET:
+        return False, "PayPal credentials not configured"
+    
+    # Get access token
+    import base64
+    creds = base64.b64encode(f"{PAYPAL_CLIENT_ID}:{PAYPAL_CLIENT_SECRET}".encode()).decode()
+    token_data = "grant_type=client_credentials"
+    req = urllib.request.Request(
+        f"{PAYPAL_API}/v1/oauth2/token",
+        data=token_data.encode(),
+        headers={"Authorization": f"Basic {creds}", "Content-Type": "application/x-www-form-urlencoded"},
+        method="POST"
+    )
+    
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            token = json.loads(resp.read().decode()).get("access_token")
+        
+        # Verify subscription
+        req2 = urllib.request.Request(
+            f"{PAYPAL_API}/v1/billing/subscriptions/{subscription_id}",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        with urllib.request.urlopen(req2, timeout=15) as resp:
+            sub = json.loads(resp.read().decode())
+            status = sub.get("status", "")
+            return status in ["ACTIVE", "APPROVED"], status
+    except Exception as e:
+        return False, str(e)
+
+
+# ============ HTTP HANDLER ============
 
 class APIHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -115,52 +175,124 @@ class APIHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
     
     def do_GET(self):
         if self.path == '/' or self.path == '/index.html':
             self.serve_file('index.html', 'text/html')
-        elif self.path == '/index-a.html':
-            self.serve_file('index-a.html', 'text/html')
-        elif self.path == '/index-b.html':
-            self.serve_file('index-b.html', 'text/html')
+        elif self.path == '/index-ab-test.html':
+            self.serve_file('index-ab-test.html', 'text/html')
+        elif self.path == '/sitemap.xml':
+            self.serve_file('sitemap.xml', 'application/xml')
+        elif self.path == '/robots.txt':
+            self.serve_file('robots.txt', 'text/plain')
+        elif self.path == '/api/config':
+            # Return public config for frontend
+            self.send_json({
+                "paypal_client_id": PAYPAL_CLIENT_ID,
+                "paypal_plan_id": PAYPAL_PLAN_ID,
+                "paypal_mode": PAYPAL_MODE,
+                "free_styles": FREE_STYLES,
+                "all_styles": ALL_STYLES_FREE,
+                "free_daily_limit": FREE_DAILY_LIMIT
+            })
         else:
             self.send_response(404)
             self.end_headers()
-            self.wfile.write(b'Not Found')
     
     def do_POST(self):
         if self.path == '/api/enhance':
-            try:
-                content_length = int(self.headers.get('Content-Length', 0))
-                body = self.rfile.read(content_length).decode('utf-8')
-                data = json.loads(body)
-                
-                text = data.get('text', '').strip()
-                style = data.get('style', 'casual')
-                
-                if not text:
-                    self.send_json({'error': 'Text is required'}, 400)
-                    return
-                
-                if style not in PROMPTS:
-                    self.send_json({'error': 'Valid style is required'}, 400)
-                    return
-                
-                if len(text) > 5000:
-                    self.send_json({'error': 'Text too long. Free tier limit: 5000 characters.'}, 413)
-                    return
-                
-                result = call_gemini(text, style)
-                self.send_json({'result': result})
-                
-            except Exception as e:
-                self.send_json({'error': str(e)}, 500)
+            self.handle_enhance()
+        elif self.path == '/api/activate-pro':
+            self.handle_activate_pro()
         else:
             self.send_response(404)
             self.end_headers()
+    
+    def handle_enhance(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body)
+            
+            text = data.get('text', '').strip()
+            style = data.get('style', 'casual')
+            email = data.get('email', '').strip().lower()
+            
+            if not text:
+                self.send_json({'error': 'Text is required'}, 400)
+                return
+            
+            if style not in PROMPTS:
+                self.send_json({'error': 'Valid style is required'}, 400)
+                return
+            
+            # Check quota
+            ip = get_client_ip(self.headers)
+            allowed, remaining, is_pro = check_quota(email, ip, len(text))
+            
+            if not allowed:
+                self.send_json({
+                    'error': 'Daily free limit reached (5000 characters). Upgrade to Pro for unlimited access.',
+                    'code': 'QUOTA_EXCEEDED',
+                    'remaining': remaining,
+                    'is_pro': False
+                }, 403)
+                return
+            
+            # Free users only get casual + concise
+            if not is_pro and style not in FREE_STYLES:
+                self.send_json({
+                    'error': f'"{style}" style is Pro-only. Free users can use: Casual and Concise. Upgrade to Pro for all 5 styles.',
+                    'code': 'PRO_REQUIRED',
+                    'is_pro': False
+                }, 403)
+                return
+            
+            result = call_gemini(text, style)
+            self.send_json({
+                'result': result,
+                'remaining': remaining,
+                'is_pro': is_pro
+            })
+            
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+    
+    def handle_activate_pro(self):
+        """Activate Pro after PayPal subscription"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body)
+            
+            email = data.get('email', '').strip().lower()
+            subscription_id = data.get('subscription_id', '')
+            
+            if not email:
+                self.send_json({'error': 'Email is required'}, 400)
+                return
+            
+            # Verify with PayPal if credentials are set
+            if PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET and subscription_id:
+                is_valid, status = verify_paypal_subscription(subscription_id)
+                if not is_valid:
+                    self.send_json({'error': f'PayPal verification failed: {status}'}, 400)
+                    return
+            
+            # Mark as Pro
+            pro_users.add(email)
+            self.send_json({
+                'success': True,
+                'email': email,
+                'is_pro': True,
+                'message': 'Pro activated! Refresh the page to unlock all features.'
+            })
+            
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
     
     def serve_file(self, filename, content_type):
         try:
@@ -187,7 +319,8 @@ def run_server():
     port = int(os.environ.get('PORT', 3000))
     server = HTTPServer(('0.0.0.0', port), APIHandler)
     print(f"🚀 AI Text Coach server running at http://localhost:{port}")
-    print(f"📁 Serving files from: {os.getcwd()}")
+    print(f"💳 PayPal Mode: {PAYPAL_MODE}")
+    print(f"📧 Pro users in memory: {len(pro_users)}")
     print("⏹️  Press Ctrl+C to stop")
     try:
         server.serve_forever()

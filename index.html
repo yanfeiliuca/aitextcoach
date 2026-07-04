@@ -70,16 +70,24 @@
     <div class="max-w-3xl mx-auto">
       <div class="bg-white border border-line p-8 sm:p-10 space-y-8">
         
+        <!-- Email (for quota tracking) -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <label class="text-sm font-medium text-ink">Your Email</label>
+          <input type="email" id="email" placeholder="Enter your email to track usage (optional)" 
+            class="w-full sm:w-80 px-4 py-3 border border-line bg-cream text-sm focus:outline-none focus:border-charcoal-800 transition">
+        </div>
+
         <!-- Style Selector -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <label class="text-sm font-medium text-ink">Writing Style</label>
           <select id="style" class="w-full sm:w-80 px-4 py-3 border border-line bg-cream text-sm focus:outline-none focus:border-charcoal-800 transition">
-            <option value="academic">Academic — Formal, for essays & papers</option>
-            <option value="business">Business — Clear, for emails & reports</option>
-            <option value="creative">Creative — Vivid, for blogs & stories</option>
-            <option value="casual" selected>Casual — Relaxed, for social & personal</option>
-            <option value="concise">Concise — Direct, cut the fluff</option>
+            <option value="casual" selected>Casual — Relaxed, for social & personal ✓ Free</option>
+            <option value="concise">Concise — Direct, cut the fluff ✓ Free</option>
+            <option value="academic" disabled>Academic — Formal, for essays & papers 🔒 Pro</option>
+            <option value="business" disabled>Business — Clear, for emails & reports 🔒 Pro</option>
+            <option value="creative" disabled>Creative — Vivid, for blogs & stories 🔒 Pro</option>
           </select>
+          <span id="proBadge" class="hidden text-xs px-2 py-1 bg-rose-500 text-white rounded-full">Pro</span>
         </div>
 
         <!-- Input -->
@@ -207,8 +215,13 @@
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> History & saves</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Batch processing</li>
           </ul>
-          <button onclick="showPayPalPreview()" class="w-full mt-8 py-3 px-4 bg-rose-500 text-white text-sm font-medium hover:bg-rose-400 transition">Upgrade to Pro →</button>
-          <p class="text-[10px] text-white/40 mt-2 text-center">PayPal integration coming soon</p>
+          <div id="paypalSection" class="mt-8 space-y-3">
+            <input type="email" id="paypalEmail" placeholder="Enter your email for Pro activation" 
+              class="w-full px-4 py-3 bg-white/10 border border-white/20 text-white placeholder-white/40 text-sm focus:outline-none focus:border-rose-400 transition">
+            <div id="paypal-button-container" class="w-full"></div>
+            <p id="paypalStatus" class="text-[10px] text-white/40 text-center hidden"></p>
+          </div>
+          <p class="text-[10px] text-white/40 mt-2 text-center">Secure payment via PayPal</p>
         </div>
       </div>
     </div>
