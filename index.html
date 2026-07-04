@@ -320,8 +320,7 @@
       const avgSentenceLength = wordCount / sentences;
       const avgSyllablesPerWord = syllables / wordCount;
       const flesch = 206.835 - 1.015 * avgSentenceLength - 84.6 * avgSyllablesPerWord;
-      // Add minimum floor so short/complex texts don't all show 0
-      return Math.max(10, Math.min(100, Math.round(flesch)));
+      return Math.max(0, Math.min(100, Math.round(flesch)));
     }
 
     function calculateHumanLikeScore(text) {
