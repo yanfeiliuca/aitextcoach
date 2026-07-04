@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Text Coach — Make Your AI Writing Sound Human</title>
+  <meta name="description" content="Transform robotic AI-generated text into natural, engaging writing. 5 writing styles, instant results, free to start.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+
+  <!-- Hero -->
+  <section class="pt-20 pb-16 px-4 text-center">
+    <div class="max-w-4xl mx-auto">
+      <span class="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-4">
+        ⚡ AI Text Enhancement
+      </span>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 mb-6">
+        Make Your AI Writing <span class="text-blue-600">Sound Human</span>
+      </h1>
+      <p class="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto mb-8">
+        Transform robotic AI-generated text into natural, engaging writing that reads like it came from a real person.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
+        <span>✅ 5 Writing Styles</span>
+        <span>✅ Instant Results</span>
+        <span>✅ Free to Start</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tool -->
+  <section class="py-8 px-4">
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-lg p-6 sm:p-8 space-y-6">
+        
+        <!-- Style Selector -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <label class="text-sm font-medium text-slate-700">Writing Style:</label>
+          <select id="style" class="w-full sm:w-72 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="academic">Academic — Formal, for essays & papers</option>
+            <option value="business">Business — Clear, for emails & reports</option>
+            <option value="creative">Creative — Vivid, for blogs & stories</option>
+            <option value="casual" selected>Casual — Relaxed, for social & personal</option>
+            <option value="concise">Concise — Direct, cut the fluff</option>
+          </select>
+        </div>
+
+        <!-- Input -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="text-sm font-medium text-slate-700">Your Text</label>
+            <span id="stats" class="text-xs text-slate-400">0 words · 0 chars</span>
+          </div>
+          <textarea id="input" placeholder="Paste your AI-generated text here..." 
+            class="w-full min-h-[200px] px-4 py-3 border border-slate-300 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          <p id="limitWarning" class="text-xs text-red-500 hidden">Free tier limit: 5000 characters. Upgrade to Pro for unlimited.</p>
+        </div>
+
+        <!-- Button -->
+        <button id="enhanceBtn" onclick="enhance()" 
+          class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-4 rounded-lg transition flex items-center justify-center gap-2">
+          <span id="btnText">⚡ Enhance My Text</span>
+        </button>
+
+        <!-- Error -->
+        <div id="error" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+
+        <!-- Result -->
+        <div id="resultSection" class="hidden space-y-4">
+          <div class="flex border-b border-slate-200">
+            <button onclick="showTab('before')" id="tabBefore" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition">Before</button>
+            <button onclick="showTab('after')" id="tabAfter" class="px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600 transition">After</button>
+          </div>
+          
+          <div id="beforePanel" class="hidden p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <p id="beforeText" class="text-slate-700 whitespace-pre-wrap"></p>
+          </div>
+          
+          <div id="afterPanel" class="p-4 bg-green-50 rounded-lg border border-green-200">
+            <p id="afterText" class="text-slate-700 whitespace-pre-wrap"></p>
+            <button onclick="copyResult()" class="mt-2 text-sm text-green-700 hover:text-green-800 flex items-center gap-1">
+              📋 Copy Result
+            </button>
+          </div>
+
+          <!-- Scores -->
+          <div id="scores" class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-slate-600">Readability</span>
+                <span id="readabilityScore" class="font-medium">0/100</span>
+              </div>
+              <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div id="readabilityBar" class="h-full bg-blue-500 rounded-full transition-all" style="width: 0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-slate-600">Human-like Score</span>
+                <span id="humanScore" class="font-medium">0/100</span>
+              </div>
+              <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div id="humanBar" class="h-full bg-green-500 rounded-full transition-all" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="py-16 px-4 bg-slate-50">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-2xl sm:text-3xl font-bold text-center text-slate-900 mb-12">Why Choose AI Text Coach?</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg border border-slate-200 p-6 text-center">
+          <div class="text-4xl mb-4">🎨</div>
+          <h3 class="font-semibold text-slate-900 mb-2">5 Writing Styles</h3>
+          <p class="text-sm text-slate-600">From academic to casual, find the perfect tone for any audience.</p>
+        </div>
+        <div class="bg-white rounded-lg border border-slate-200 p-6 text-center">
+          <div class="text-4xl mb-4">⚡</div>
+          <h3 class="font-semibold text-slate-900 mb-2">Instant Results</h3>
+          <p class="text-sm text-slate-600">Get enhanced text in seconds. No waiting, no complex setup.</p>
+        </div>
+        <div class="bg-white rounded-lg border border-slate-200 p-6 text-center">
+          <div class="text-4xl mb-4">🔒</div>
+          <h3 class="font-semibold text-slate-900 mb-2">Privacy First</h3>
+          <p class="text-sm text-slate-600">We don't store your text. Processed and deleted immediately.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="py-16 px-4">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-2xl sm:text-3xl font-bold text-center text-slate-900 mb-4">Simple Pricing</h2>
+      <p class="text-center text-slate-600 mb-12">Start free. Upgrade when you need more.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg border border-slate-200 p-6">
+          <div class="text-center mb-6">
+            <h3 class="text-lg font-semibold text-slate-900">Free</h3>
+            <p class="text-3xl font-bold text-slate-900 mt-2">$0</p>
+            <p class="text-sm text-slate-500">Forever free</p>
+          </div>
+          <ul class="space-y-3 text-sm text-slate-600">
+            <li>✅ 500 words/day</li>
+            <li>✅ 2 writing styles</li>
+            <li>✅ Basic readability score</li>
+            <li>✅ Copy results</li>
+          </ul>
+          <button class="w-full mt-6 py-2 px-4 bg-slate-100 text-slate-700 rounded-lg font-medium">Current Plan</button>
+        </div>
+        <div class="bg-white rounded-lg border border-blue-200 bg-blue-50/50 p-6">
+          <div class="text-center mb-6">
+            <span class="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded mb-2">Recommended</span>
+            <h3 class="text-lg font-semibold text-slate-900">Pro</h3>
+            <p class="text-3xl font-bold text-slate-900 mt-2">$9.99</p>
+            <p class="text-sm text-slate-500">per month</p>
+          </div>
+          <ul class="space-y-3 text-sm text-slate-600">
+            <li>✅ Unlimited words</li>
+            <li>✅ All 8 writing styles</li>
+            <li>✅ Tone adjustment</li>
+            <li>✅ Export to Word/PDF</li>
+            <li>✅ History & saves</li>
+            <li>✅ Batch processing</li>
+          </ul>
+          <button class="w-full mt-6 py-2 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">Upgrade to Pro →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-8 px-4 border-t border-slate-200">
+    <div class="max-w-4xl mx-auto text-center text-sm text-slate-500">
+      <p>© 2026 AI Text Coach. All rights reserved.</p>
+      <p class="mt-2">
+        <a href="#" class="text-blue-600 hover:underline">Privacy Policy</a>
+        · <a href="#" class="text-blue-600 hover:underline">Terms of Service</a>
+        · <a href="#" class="text-blue-600 hover:underline">Contact</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Update stats
+    document.getElementById('input').addEventListener('input', function() {
+      const text = this.value;
+      const words = text.split(/\s+/).filter(w => w.length > 0).length;
+      const chars = text.length;
+      document.getElementById('stats').textContent = words + ' words · ' + chars + ' chars';
+      document.getElementById('limitWarning').classList.toggle('hidden', chars <= 5000);
+    });
+
+    function showTab(tab) {
+      const beforePanel = document.getElementById('beforePanel');
+      const afterPanel = document.getElementById('afterPanel');
+      const tabBefore = document.getElementById('tabBefore');
+      const tabAfter = document.getElementById('tabAfter');
+      
+      if (tab === 'before') {
+        beforePanel.classList.remove('hidden');
+        afterPanel.classList.add('hidden');
+        tabBefore.classList.add('border-blue-600', 'text-blue-600');
+        tabBefore.classList.remove('border-transparent', 'text-slate-500');
+        tabAfter.classList.remove('border-blue-600', 'text-blue-600');
+        tabAfter.classList.add('border-transparent', 'text-slate-500');
+      } else {
+        beforePanel.classList.add('hidden');
+        afterPanel.classList.remove('hidden');
+        tabAfter.classList.add('border-blue-600', 'text-blue-600');
+        tabAfter.classList.remove('border-transparent', 'text-slate-500');
+        tabBefore.classList.remove('border-blue-600', 'text-blue-600');
+        tabBefore.classList.add('border-transparent', 'text-slate-500');
+      }
+    }
+
+    function copyResult() {
+      const text = document.getElementById('afterText').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('#afterPanel button');
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => btn.textContent = '📋 Copy Result', 2000);
+      });
+    }
+
+    function calculateReadability(text) {
+      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+      const words = text.split(/\s+/).filter(w => w.length > 0).length;
+      const syllables = text.split(/\s+/).reduce((count, word) => {
+        return count + (word.match(/[aeiouAEIOU]/g) || []).length;
+      }, 0);
+      if (sentences === 0 || words === 0) return 0;
+      const avgSentenceLength = words / sentences;
+      const avgSyllablesPerWord = syllables / words;
+      const flesch = 206.835 - 1.015 * avgSentenceLength - 84.6 * avgSyllablesPerWord;
+      return Math.max(0, Math.min(100, Math.round(flesch)));
+    }
+
+    function calculateHumanLikeScore(text) {
+      let score = 70;
+      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      const lengths = sentences.map(s => s.split(/\s+/).filter(w => w.length > 0).length);
+      const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+      const variance = lengths.reduce((acc, len) => acc + Math.pow(len - avgLength, 2), 0) / lengths.length;
+      if (variance > 5) score += 10;
+      const contractions = (text.match(/\b\w+'\w+\b/g) || []).length;
+      if (contractions > 0) score += 5;
+      const personal = (text.match(/\b(I|you|we|my|your|our)\b/gi) || []).length;
+      if (personal > 2) score += 5;
+      const sensory = (text.match(/\b(see|feel|hear|smell|taste|touch|warm|cold|bright|dark|soft|loud)\b/gi) || []).length;
+      if (sensory > 0) score += 5;
+      const aiPatterns = (text.match(/\b(furthermore|moreover|additionally|in conclusion|it is important to note|it should be noted)\b/gi) || []).length;
+      if (aiPatterns > 2) score -= 10;
+      return Math.max(0, Math.min(100, score));
+    }
+
+    async function enhance() {
+      const input = document.getElementById('input').value;
+      const style = document.getElementById('style').value;
+      const btn = document.getElementById('enhanceBtn');
+      const btnText = document.getElementById('btnText');
+      const error = document.getElementById('error');
+      const resultSection = document.getElementById('resultSection');
+
+      if (!input.trim()) return;
+      if (input.length > 5000) {
+        error.textContent = 'Text too long. Free tier limit: 5000 characters.';
+        error.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btnText.innerHTML = '<div class="loader mr-2"></div> Enhancing...';
+      error.classList.add('hidden');
+      resultSection.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/enhance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: input, style: style })
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Failed to enhance text');
+        }
+
+        const data = await response.json();
+        
+        document.getElementById('beforeText').textContent = input;
+        document.getElementById('afterText').textContent = data.result;
+        
+        const readability = calculateReadability(data.result);
+        const humanLike = calculateHumanLikeScore(data.result);
+        
+        document.getElementById('readabilityScore').textContent = readability + '/100';
+        document.getElementById('readabilityBar').style.width = readability + '%';
+        document.getElementById('humanScore').textContent = humanLike + '/100';
+        document.getElementById('humanBar').style.width = humanLike + '%';
+        
+        resultSection.classList.remove('hidden');
+        showTab('after');
+      } catch (err) {
+        error.textContent = err.message || 'Something went wrong. Please try again.';
+        error.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = '⚡ Enhance My Text';
+      }
+    }
+  </script>
+</body>
+</html>
