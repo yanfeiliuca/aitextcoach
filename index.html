@@ -237,12 +237,16 @@
 
   <script>
     // Update stats
-    document.getElementById('input').addEventListener('input', function() {
-      const text = this.value;
+    function updateStats() {
+      const text = document.getElementById('input').value;
       const words = text.split(/\s+/).filter(w => w.length > 0).length;
       const chars = text.length;
       document.getElementById('stats').textContent = words + ' words · ' + chars + ' chars';
       document.getElementById('limitWarning').classList.toggle('hidden', chars <= 5000);
+    }
+    document.getElementById('input').addEventListener('input', updateStats);
+    document.getElementById('input').addEventListener('paste', function() {
+      setTimeout(updateStats, 0);
     });
 
     function showTab(tab) {
