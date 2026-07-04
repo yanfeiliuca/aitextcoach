@@ -28,6 +28,10 @@ pro_users = set()          # emails that have paid
 usage_today = {}           # ip_or_email -> chars_used_today
 FREE_DAILY_LIMIT = 5000    # chars per day
 
+# Click tracking (MVP: in-memory, resets on restart)
+# Format: { "YYYY-MM-DD": { "enhance": N, "upgrade": N } }
+click_stats = {}
+
 # ============ PROMPTS ============
 PROMPTS = {
     "academic": """Rewrite the following text in an academic style suitable for college essays and research papers.
@@ -200,6 +204,19 @@ class APIHandler(BaseHTTPRequestHandler):
                 "all_styles": ALL_STYLES_FREE,
                 "free_daily_limit": FREE_DAILY_LIMIT
             })
+        elif self.path == '/api/stats':
+            # Simple stats dashboard
+            today = time.strftime("%Y-%m-%d")
+            today_stats = click_stats.get(today, {"enhance": 0, "upgrade": 0})
+            total = {"enhance": 0, "upgrade": 0}
+            for day_data in click_stats.values():
+                total["enhance"] += day_data.get("enhance", 0)
+                total["upgrade"] += day_data.get("upgrade", 0)
+            self.send_json({
+                "today": today_stats,
+                "total": total,
+                "daily_breakdown": click_stats
+            })
         else:
             self.send_response(404)
             self.end_headers()
@@ -209,6 +226,8 @@ class APIHandler(BaseHTTPRequestHandler):
             self.handle_enhance()
         elif self.path == '/api/activate-pro':
             self.handle_activate_pro()
+        elif self.path == '/api/track-click':
+            self.handle_track_click()
         else:
             self.send_response(404)
             self.end_headers()
@@ -292,6 +311,27 @@ class APIHandler(BaseHTTPRequestHandler):
                 'is_pro': True,
                 'message': 'Pro activated! Refresh the page to unlock all features.'
             })
+            
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+    
+    def handle_track_click(self):
+        """Track button clicks for analytics"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body)
+            
+            button = data.get('button', '')  # 'enhance' or 'upgrade'
+            today = time.strftime("%Y-%m-%d")
+            
+            if today not in click_stats:
+                click_stats[today] = {"enhance": 0, "upgrade": 0}
+            
+            if button in click_stats[today]:
+                click_stats[today][button] += 1
+            
+            self.send_json({'success': True, 'button': button, 'today': click_stats[today]})
             
         except Exception as e:
             self.send_json({'error': str(e)}, 500)

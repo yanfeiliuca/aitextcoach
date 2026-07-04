@@ -316,6 +316,7 @@
     }
 
     function showPayPalPreview() {
+      trackClick('upgrade');
       alert("PayPal integration coming soon! We're preparing a secure checkout. Stay tuned.");
     }
 
@@ -323,6 +324,19 @@
       const sample = "In today's rapidly evolving digital landscape, it is important to note that artificial intelligence has fundamentally transformed the way we approach content creation. Furthermore, studies have shown that embracing AI-driven solutions can unlock unprecedented opportunities for growth and innovation. In conclusion, by integrating these strategies, businesses can position themselves at the forefront of their respective industries.";
       document.getElementById('input').value = sample;
       updateStats();
+    }
+
+    async function trackClick(button) {
+      // Fire-and-forget tracking
+      try {
+        await fetch('/api/track-click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ button: button })
+        });
+      } catch (e) {
+        // Silent fail — tracking should never block user action
+      }
     }
 
     async function enhance() {
@@ -339,6 +353,9 @@
         error.classList.remove('hidden');
         return;
       }
+
+      // Track click
+      trackClick('enhance');
 
       btn.disabled = true;
       btnText.innerHTML = '<div class="loader mr-2"></div> Enhancing...';
