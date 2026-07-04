@@ -122,6 +122,10 @@ class APIHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/' or self.path == '/index.html':
             self.serve_file('index.html', 'text/html')
+        elif self.path == '/index-a.html':
+            self.serve_file('index-a.html', 'text/html')
+        elif self.path == '/index-b.html':
+            self.serve_file('index-b.html', 'text/html')
         else:
             self.send_response(404)
             self.end_headers()
