@@ -84,9 +84,12 @@
 
         <!-- Input -->
         <div class="space-y-3">
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between items-center flex-wrap gap-2">
             <label class="text-sm font-medium text-ink">Your Text</label>
-            <span id="stats" class="text-xs text-muted">0 words · 0 chars</span>
+            <div class="flex items-center gap-3">
+              <button onclick="loadSampleText()" class="text-xs text-rose-500 hover:text-rose-600 transition underline">Try with sample text</button>
+              <span id="stats" class="text-xs text-muted">0 words · 0 chars</span>
+            </div>
           </div>
           <textarea id="input" placeholder="Paste your AI-generated text here..." 
             class="w-full min-h-[200px] px-4 py-3 border border-line bg-cream resize-y focus:outline-none focus:border-charcoal-800 transition text-sm leading-relaxed"></textarea>
@@ -236,7 +239,7 @@
   </footer>
 
   <script>
-    // Update stats
+    // Update stats - use multiple mechanisms for reliability
     function updateStats() {
       const text = document.getElementById('input').value;
       const words = text.split(/\s+/).filter(w => w.length > 0).length;
@@ -244,10 +247,19 @@
       document.getElementById('stats').textContent = words + ' words · ' + chars + ' chars';
       document.getElementById('limitWarning').classList.toggle('hidden', chars <= 5000);
     }
-    document.getElementById('input').addEventListener('input', updateStats);
-    document.getElementById('input').addEventListener('paste', function() {
-      setTimeout(updateStats, 0);
+    
+    const inputEl = document.getElementById('input');
+    inputEl.addEventListener('input', updateStats);
+    inputEl.addEventListener('beforeinput', updateStats);
+    inputEl.addEventListener('paste', function(e) {
+      // Use clipboardData if available for immediate access
+      const pasted = (e.clipboardData || window.clipboardData).getData('text');
+      if (pasted) {
+        setTimeout(updateStats, 10);
+      }
     });
+    // Fallback: poll every 300ms to catch any missed updates
+    setInterval(updateStats, 300);
 
     function showTab(tab) {
       const beforePanel = document.getElementById('beforePanel');
@@ -313,7 +325,13 @@
     }
 
     function showPayPalPreview() {
-      alert('PayPal integration coming soon! We're preparing a secure checkout. Stay tuned.');
+      alert("PayPal integration coming soon! We're preparing a secure checkout. Stay tuned.");
+    }
+
+    function loadSampleText() {
+      const sample = "In today's rapidly evolving digital landscape, it is important to note that artificial intelligence has fundamentally transformed the way we approach content creation. Furthermore, studies have shown that embracing AI-driven solutions can unlock unprecedented opportunities for growth and innovation. In conclusion, by integrating these strategies, businesses can position themselves at the forefront of their respective industries.";
+      document.getElementById('input').value = sample;
+      updateStats();
     }
 
     async function enhance() {
