@@ -23,8 +23,32 @@ PAYPAL_PLAN_ID = os.environ.get("PAYPAL_PLAN_ID", "")
 PAYPAL_API = "https://api.paypal.com" if PAYPAL_MODE == "live" else "https://api.sandbox.paypal.com"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
 
+# ============ PERSISTENCE ============
+PRO_USERS_FILE = "pro_users.json"
+
+def load_pro_users():
+    """Load Pro users from JSON file"""
+    if os.path.exists(PRO_USERS_FILE):
+        try:
+            with open(PRO_USERS_FILE, 'r') as f:
+                data = json.load(f)
+                return set(data.get('pro_users', []))
+        except (json.JSONDecodeError, IOError):
+            return set()
+    return set()
+
+def save_pro_users(users):
+    """Save Pro users to JSON file"""
+    try:
+        with open(PRO_USERS_FILE, 'w') as f:
+            json.dump({'pro_users': list(users)}, f)
+    except IOError:
+        pass
+
+# MVP: Persistent Pro users (survives restarts)
+pro_users = load_pro_users()
+
 # MVP: In-memory storage (resets on deploy/restart — acceptable for early stage)
-pro_users = set()          # emails that have paid
 usage_today = {}           # ip_or_email -> chars_used_today
 FREE_DAILY_LIMIT = 5000    # chars per day
 
@@ -305,8 +329,9 @@ class APIHandler(BaseHTTPRequestHandler):
                     self.send_json({'error': f'PayPal verification failed: {status}'}, 400)
                     return
             
-            # Mark as Pro
+            # Mark as Pro and save
             pro_users.add(email)
+            save_pro_users(pro_users)
             self.send_json({
                 'success': True,
                 'email': email,
@@ -364,7 +389,7 @@ def run_server():
     server = HTTPServer(('0.0.0.0', port), APIHandler)
     print(f"🚀 AI Text Coach server running at http://localhost:{port}")
     print(f"💳 PayPal Mode: {PAYPAL_MODE}")
-    print(f"📧 Pro users in memory: {len(pro_users)}")
+    print(f"📧 Pro users loaded: {len(pro_users)}")
     print("⏹️  Press Ctrl+C to stop")
     try:
         server.serve_forever()
