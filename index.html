@@ -519,6 +519,32 @@
     });
     setInterval(updateStats, 300);
 
+    // Check Pro status when email input changes (for returning users)
+    const emailEl = document.getElementById('email');
+    let checkProTimeout;
+    emailEl.addEventListener('blur', async function() {
+      const email = emailEl.value.trim().toLowerCase();
+      if (!email) return;
+      
+      // Debounce to avoid too many requests
+      clearTimeout(checkProTimeout);
+      checkProTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/check-pro?email=${encodeURIComponent(email)}`);
+          const data = await res.json();
+          
+          if (data.is_pro) {
+            isPro = true;
+            localStorage.setItem('aitextcoach_email', email);
+            localStorage.setItem('aitextcoach_pro', 'true');
+            updateProUI();
+          }
+        } catch (e) {
+          // Silent fail — checking Pro status should never block user
+        }
+      }, 500);
+    });
+
     function showTab(tab) {
       const beforePanel = document.getElementById('beforePanel');
       const afterPanel = document.getElementById('afterPanel');

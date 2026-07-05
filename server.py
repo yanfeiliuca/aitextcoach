@@ -243,6 +243,22 @@ class APIHandler(BaseHTTPRequestHandler):
                 "total": total,
                 "daily_breakdown": click_stats
             })
+        elif self.path.startswith('/api/check-pro'):
+            # Check if an email has Pro status
+            from urllib.parse import urlparse, parse_qs
+            parsed = urlparse(self.path)
+            params = parse_qs(parsed.query)
+            email = params.get('email', [''])[0].strip().lower()
+            
+            if not email:
+                self.send_json({'error': 'Email is required', 'is_pro': False})
+                return
+            
+            is_pro = email in pro_users
+            self.send_json({
+                'email': email,
+                'is_pro': is_pro
+            })
         else:
             self.send_response(404)
             self.end_headers()
