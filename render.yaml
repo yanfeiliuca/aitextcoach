@@ -9,10 +9,10 @@ services:
       - key: GOOGLE_API_KEY
         sync: false
       - key: PAYPAL_CLIENT_ID
-        sync: false
+        value: AdtYR0zkWzQfqViuiRqDPao6Dp1nwr-nXNNcBG3scWj0BFr3_zUTc-1IsGf95NqDb2gLaD8S20LLaFBl
       - key: PAYPAL_CLIENT_SECRET
         sync: false
       - key: PAYPAL_MODE
         value: sandbox
       - key: PAYPAL_PLAN_ID
-        sync: false
+        value: P-7SB75295DK0602635NJFH34Q
