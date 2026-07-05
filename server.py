@@ -268,6 +268,8 @@ class APIHandler(BaseHTTPRequestHandler):
             self.handle_enhance()
         elif self.path == '/api/activate-pro':
             self.handle_activate_pro()
+        elif self.path == '/api/debug-add-pro':
+            self.handle_debug_add_pro()
         elif self.path == '/api/track-click':
             self.handle_track_click()
         else:
@@ -353,6 +355,37 @@ class APIHandler(BaseHTTPRequestHandler):
                 'email': email,
                 'is_pro': True,
                 'message': 'Pro activated! Refresh the page to unlock all features.'
+            })
+            
+        except Exception as e:
+            self.send_json({'error': str(e)}, 500)
+    
+    def handle_debug_add_pro(self):
+        """Debug endpoint to manually add a Pro user (for testing only)"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body)
+            
+            email = data.get('email', '').strip().lower()
+            token = data.get('token', '')
+            
+            if not email:
+                self.send_json({'error': 'Email is required'}, 400)
+                return
+            
+            # Simple token check for basic security (change in production)
+            if token != 'aitextcoach_debug_2024':
+                self.send_json({'error': 'Invalid token'}, 403)
+                return
+            
+            pro_users.add(email)
+            save_pro_users(pro_users)
+            self.send_json({
+                'success': True,
+                'email': email,
+                'is_pro': True,
+                'message': f'{email} added as Pro user for testing. Total Pro users: {len(pro_users)}'
             })
             
         except Exception as e:
