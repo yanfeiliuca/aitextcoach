@@ -54,6 +54,7 @@
       <div class="flex items-center gap-4">
         <a href="/" class="text-xs text-muted hover:text-ink transition">Home</a>
         <a href="/blog" class="text-xs text-muted hover:text-ink transition">Blog</a>
+        <button onclick="clearLocalData()" class="text-xs text-muted hover:text-ink transition" title="Reset for fresh user testing">Reset</button>
         <span id="navProBadge" class="hidden text-[10px] px-2 py-1 bg-rose-500 text-white rounded-full tracking-wide">PRO</span>
       </div>
     </div>
@@ -324,6 +325,10 @@
       script.src = `https://www.paypal.com/sdk/js?client-id=${appConfig.paypal_client_id}&vault=true&intent=subscription&currency=USD`;
       script.setAttribute('data-sdk-integration-source', 'button-factory');
       script.onload = () => { paypalLoaded = true; };
+      script.onerror = () => { 
+        console.error('PayPal SDK failed to load');
+        paypalLoaded = false;
+      };
       document.head.appendChild(script);
     }
 
@@ -344,15 +349,31 @@
       if (email) document.getElementById('paypalEmail').value = email;
       
       document.getElementById('paypalModal').classList.remove('hidden');
+      document.getElementById('payPalError').classList.add('hidden');
+      document.getElementById('payPalSuccess').classList.add('hidden');
       
       // Render PayPal button if SDK loaded
       if (paypalLoaded && window.paypal) {
         renderPayPalButton();
       } else if (appConfig.paypal_client_id) {
-        // Wait for SDK
-        setTimeout(() => {
-          if (window.paypal) renderPayPalButton();
-        }, 2000);
+        // Show loading state
+        document.getElementById('paypal-button-container').innerHTML = '<p class="text-sm text-muted text-center py-4">Loading PayPal...</p>';
+        // Retry with backoff
+        let attempts = 0;
+        const maxAttempts = 10;
+        const tryRender = () => {
+          attempts++;
+          if (window.paypal) {
+            renderPayPalButton();
+          } else if (attempts < maxAttempts) {
+            setTimeout(tryRender, 1000);
+          } else {
+            document.getElementById('paypal-button-container').innerHTML = '';
+            document.getElementById('payPalError').textContent = 'PayPal failed to load. This may be due to network restrictions. Please try again or use a VPN.';
+            document.getElementById('payPalError').classList.remove('hidden');
+          }
+        };
+        tryRender();
       } else {
         document.getElementById('payPalError').textContent = 'PayPal is not configured yet. Please contact support.';
         document.getElementById('payPalError').classList.remove('hidden');
@@ -451,6 +472,33 @@
       
       // Hide limit warning
       document.getElementById('limitWarning').classList.add('hidden');
+    }
+
+    function clearLocalData() {
+      // Clear all localStorage data for fresh user testing
+      localStorage.removeItem('aitextcoach_email');
+      localStorage.removeItem('aitextcoach_pro');
+      localStorage.removeItem('aitextcoach_version');
+      
+      // Reset UI
+      isPro = false;
+      document.getElementById('email').value = '';
+      document.getElementById('navProBadge').classList.add('hidden');
+      document.getElementById('proBadge').classList.add('hidden');
+      
+      // Re-lock Pro styles
+      document.querySelectorAll('.pro-only').forEach(opt => {
+        opt.disabled = true;
+        opt.textContent = opt.textContent.replace('✓ Pro', '🔒 Pro');
+      });
+      
+      // Reset plan buttons
+      document.getElementById('proPlanBtn').textContent = 'Upgrade to Pro';
+      document.getElementById('proPlanBtn').disabled = false;
+      document.getElementById('proPlanBtn').classList.remove('opacity-60', 'cursor-not-allowed');
+      
+      alert('Local data cleared. Refresh to simulate a new user.');
+      location.reload();
     }
 
     // ============ TOOL FUNCTIONS ============
@@ -609,7 +657,16 @@
     }
 
     // ============ ON LOAD ============
-    // Check localStorage for Pro status
+    // Version check: clear old localStorage if app version changed
+    const APP_VERSION = 'v0.2';
+    const storedVersion = localStorage.getItem('aitextcoach_version');
+    if (storedVersion !== APP_VERSION) {
+      localStorage.removeItem('aitextcoach_email');
+      localStorage.removeItem('aitextcoach_pro');
+      localStorage.setItem('aitextcoach_version', APP_VERSION);
+    }
+
+    // Check localStorage for Pro status (server is authoritative on next enhance call)
     if (localStorage.getItem('aitextcoach_pro') === 'true') {
       isPro = true;
       updateProUI();
