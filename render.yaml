@@ -8,3 +8,11 @@ services:
     envVars:
       - key: GOOGLE_API_KEY
         sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_MODE
+        value: sandbox
+      - key: PAYPAL_PLAN_ID
+        sync: false

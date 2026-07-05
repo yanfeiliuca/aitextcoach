@@ -41,6 +41,8 @@
     .loader { border: 2px solid #E5E5E5; border-top: 2px solid #B76E79; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
     .font-serif { font-family: 'Playfair Display', Georgia, serif; }
     .font-sans { font-family: 'DM Sans', system-ui, sans-serif; }
+    .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+    #paypal-button-container iframe { min-height: 45px !important; }
   </style>
 </head>
 <body class="min-h-screen bg-cream font-sans text-ink">
@@ -52,6 +54,7 @@
       <div class="flex items-center gap-4">
         <a href="/" class="text-xs text-muted hover:text-ink transition">Home</a>
         <a href="/blog" class="text-xs text-muted hover:text-ink transition">Blog</a>
+        <span id="navProBadge" class="hidden text-[10px] px-2 py-1 bg-rose-500 text-white rounded-full tracking-wide">PRO</span>
       </div>
     </div>
   </nav>
@@ -86,6 +89,7 @@
           <label class="text-sm font-medium text-ink">Your Email</label>
           <input type="email" id="email" placeholder="Enter your email to track usage (optional)" 
             class="w-full sm:w-80 px-4 py-3 border border-line bg-cream text-sm focus:outline-none focus:border-charcoal-800 transition">
+          <span id="proBadge" class="hidden text-xs px-2 py-1 bg-rose-500 text-white rounded-full">Pro</span>
         </div>
 
         <!-- Style Selector -->
@@ -94,11 +98,10 @@
           <select id="style" class="w-full sm:w-80 px-4 py-3 border border-line bg-cream text-sm focus:outline-none focus:border-charcoal-800 transition">
             <option value="casual" selected>Casual — Relaxed, for social & personal ✓ Free</option>
             <option value="concise">Concise — Direct, cut the fluff ✓ Free</option>
-            <option value="academic" disabled>Academic — Formal, for essays & papers 🔒 Pro</option>
-            <option value="business" disabled>Business — Clear, for emails & reports 🔒 Pro</option>
-            <option value="creative" disabled>Creative — Vivid, for blogs & stories 🔒 Pro</option>
+            <option value="academic" class="pro-only" disabled>Academic — Formal, for essays & papers 🔒 Pro</option>
+            <option value="business" class="pro-only" disabled>Business — Clear, for emails & reports 🔒 Pro</option>
+            <option value="creative" class="pro-only" disabled>Creative — Vivid, for blogs & stories 🔒 Pro</option>
           </select>
-          <span id="proBadge" class="hidden text-xs px-2 py-1 bg-rose-500 text-white rounded-full">Pro</span>
         </div>
 
         <!-- Input -->
@@ -112,7 +115,7 @@
           </div>
           <textarea id="input" placeholder="Paste your AI-generated text here..." 
             class="w-full min-h-[200px] px-4 py-3 border border-line bg-cream resize-y focus:outline-none focus:border-charcoal-800 transition text-sm leading-relaxed"></textarea>
-          <p id="limitWarning" class="text-xs text-red-700 hidden">Free tier limit: 5000 characters. Upgrade to Pro for unlimited.</p>
+          <p id="limitWarning" class="text-xs text-red-700 hidden">Free tier limit: 5000 characters/day. <button onclick="showPayPalModal()" class="underline">Upgrade to Pro</button> for unlimited.</p>
         </div>
 
         <!-- Button -->
@@ -204,12 +207,12 @@
             <p class="text-xs text-muted mt-1">Forever free</p>
           </div>
           <ul class="space-y-3 text-sm text-muted">
-            <li class="flex items-center gap-3"><svg class="w-4 h-4 text-charcoal-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> 500 words/day</li>
+            <li class="flex items-center gap-3"><svg class="w-4 h-4 text-charcoal-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> 5000 characters/day</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-charcoal-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> 2 writing styles</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-charcoal-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Basic readability score</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-charcoal-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Copy results</li>
           </ul>
-          <button class="w-full mt-8 py-3 px-4 bg-cream border border-line text-ink text-sm font-medium hover:bg-white transition">Current Plan</button>
+          <button id="freePlanBtn" class="w-full mt-8 py-3 px-4 bg-cream border border-line text-ink text-sm font-medium hover:bg-white transition">Current Plan</button>
         </div>
         <div class="bg-charcoal-900 text-white p-8">
           <div class="text-center mb-8">
@@ -219,19 +222,19 @@
             <p class="text-xs text-white/60 mt-1">per month</p>
           </div>
           <ul class="space-y-3 text-sm text-white/80">
-            <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Unlimited words</li>
-            <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> All 8 writing styles</li>
+            <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Unlimited characters</li>
+            <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> All 5 writing styles</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Tone adjustment</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Export to Word/PDF</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> History & saves</li>
             <li class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Batch processing</li>
           </ul>
-          <button onclick="showPayPalPreview()" class="w-full mt-8 py-3 px-4 bg-[#0070BA] hover:bg-[#003087] text-white text-sm font-medium transition flex items-center justify-center gap-2">
+          <button id="proPlanBtn" onclick="showPayPalModal()" class="w-full mt-8 py-3 px-4 bg-[#0070BA] hover:bg-[#003087] text-white text-sm font-medium transition flex items-center justify-center gap-2">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c.325.104.61.26.848.477z"/>
               <path d="M9.69 16.493l-.126.795c-.075.484.254.925.72.925h.91c3.43 0 6.117-.85 7.62-2.96.68-.96 1.133-2.148 1.39-3.48.46-2.334-.012-3.908-1.36-5.036a4.66 4.66 0 0 0-1.56-.928c.56.86.766 1.96.568 3.342-.022.143-.046.288-.076.437-.983 5.05-4.349 6.797-8.647 6.797h-.91c-.524 0-.968.382-1.05.9l-.68 4.208z"/>
             </svg>
-            Pay with PayPal
+            Upgrade to Pro
           </button>
           <p class="text-[10px] text-white/40 mt-2 text-center">Secure payment. Cancel anytime.</p>
         </div>
@@ -254,27 +257,218 @@
     </div>
   </footer>
 
+  <!-- PayPal Modal -->
+  <div id="paypalModal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4">
+    <div class="bg-white w-full max-w-md p-8 relative">
+      <button onclick="hidePayPalModal()" class="absolute top-4 right-4 text-muted hover:text-ink transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      
+      <div class="text-center mb-6">
+        <span class="inline-block text-[10px] tracking-[0.2em] uppercase text-rose-600 mb-2">AI Text Coach Pro</span>
+        <h3 class="font-serif text-2xl font-semibold">Upgrade to Pro</h3>
+        <p class="font-serif text-3xl font-semibold mt-2">$9.99<span class="text-sm font-normal text-muted">/month</span></p>
+      </div>
+
+      <div class="space-y-3 text-sm text-muted mb-6">
+        <div class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Unlimited characters</div>
+        <div class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> All 5 writing styles</div>
+        <div class="flex items-center gap-3"><svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg> Cancel anytime</div>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-ink mb-2">Email for Pro activation</label>
+        <input type="email" id="paypalEmail" placeholder="your@email.com" 
+          class="w-full px-4 py-3 border border-line bg-cream text-sm focus:outline-none focus:border-charcoal-800 transition">
+        <p class="text-xs text-muted mt-1">This email will be linked to your Pro subscription.</p>
+      </div>
+
+      <div id="paypal-button-container" class="min-h-[45px]"></div>
+      
+      <div id="payPalError" class="hidden mt-4 p-3 bg-red-50 border border-red-200 text-red-800 text-xs"></div>
+      <div id="payPalSuccess" class="hidden mt-4 p-3 bg-green-50 border border-green-200 text-green-800 text-xs text-center">
+        ✅ Pro activated! Refreshing...
+      </div>
+      
+      <p class="text-[10px] text-muted text-center mt-4">Powered by PayPal. Secure payment processing.</p>
+    </div>
+  </div>
+
   <script>
-    // Update stats - use multiple mechanisms for reliability
+    // ============ STATE ============
+    let appConfig = {};
+    let isPro = false;
+    let paypalLoaded = false;
+
+    // ============ INIT ============
+    async function init() {
+      try {
+        const res = await fetch('/api/config');
+        appConfig = await res.json();
+        
+        // If PayPal is configured, load SDK
+        if (appConfig.paypal_client_id && appConfig.paypal_plan_id) {
+          loadPayPalSDK();
+        }
+        
+        // Check if user is already Pro (via email)
+        checkProStatus();
+      } catch (e) {
+        console.log('Config load failed:', e);
+      }
+    }
+
+    function loadPayPalSDK() {
+      if (paypalLoaded) return;
+      const script = document.createElement('script');
+      script.src = `https://www.paypal.com/sdk/js?client-id=${appConfig.paypal_client_id}&vault=true&intent=subscription&currency=USD`;
+      script.setAttribute('data-sdk-integration-source', 'button-factory');
+      script.onload = () => { paypalLoaded = true; };
+      document.head.appendChild(script);
+    }
+
+    function checkProStatus() {
+      const email = localStorage.getItem('aitextcoach_email');
+      if (email) {
+        document.getElementById('email').value = email;
+        // We don't auto-mark Pro here — server will tell us on next enhance call
+      }
+    }
+
+    // ============ PAYPAL MODAL ============
+    function showPayPalModal() {
+      trackClick('upgrade');
+      
+      // Pre-fill email
+      const email = document.getElementById('email').value;
+      if (email) document.getElementById('paypalEmail').value = email;
+      
+      document.getElementById('paypalModal').classList.remove('hidden');
+      
+      // Render PayPal button if SDK loaded
+      if (paypalLoaded && window.paypal) {
+        renderPayPalButton();
+      } else if (appConfig.paypal_client_id) {
+        // Wait for SDK
+        setTimeout(() => {
+          if (window.paypal) renderPayPalButton();
+        }, 2000);
+      } else {
+        document.getElementById('payPalError').textContent = 'PayPal is not configured yet. Please contact support.';
+        document.getElementById('payPalError').classList.remove('hidden');
+      }
+    }
+
+    function hidePayPalModal() {
+      document.getElementById('paypalModal').classList.add('hidden');
+      document.getElementById('payPalError').classList.add('hidden');
+      document.getElementById('payPalSuccess').classList.add('hidden');
+    }
+
+    function renderPayPalButton() {
+      const container = document.getElementById('paypal-button-container');
+      container.innerHTML = ''; // Clear previous
+      
+      window.paypal.Buttons({
+        style: {
+          shape: 'rect',
+          color: 'gold',
+          layout: 'vertical',
+          label: 'subscribe'
+        },
+        createSubscription: function(data, actions) {
+          return actions.subscription.create({
+            plan_id: appConfig.paypal_plan_id
+          });
+        },
+        onApprove: async function(data, actions) {
+          await activatePro(data.subscriptionID);
+        },
+        onError: function(err) {
+          document.getElementById('payPalError').textContent = 'Payment error: ' + (err.message || 'Unknown error');
+          document.getElementById('payPalError').classList.remove('hidden');
+        }
+      }).render('#paypal-button-container');
+    }
+
+    async function activatePro(subscriptionId) {
+      const email = document.getElementById('paypalEmail').value.trim().toLowerCase();
+      
+      if (!email) {
+        document.getElementById('payPalError').textContent = 'Please enter your email for Pro activation.';
+        document.getElementById('payPalError').classList.remove('hidden');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/activate-pro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, subscription_id: subscriptionId })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          localStorage.setItem('aitextcoach_email', email);
+          localStorage.setItem('aitextcoach_pro', 'true');
+          isPro = true;
+          
+          document.getElementById('payPalSuccess').classList.remove('hidden');
+          updateProUI();
+          
+          setTimeout(() => {
+            hidePayPalModal();
+          }, 2000);
+        } else {
+          document.getElementById('payPalError').textContent = data.error || 'Activation failed.';
+          document.getElementById('payPalError').classList.remove('hidden');
+        }
+      } catch (e) {
+        document.getElementById('payPalError').textContent = 'Network error. Please try again.';
+        document.getElementById('payPalError').classList.remove('hidden');
+      }
+    }
+
+    function updateProUI() {
+      // Update nav badge
+      document.getElementById('navProBadge').classList.remove('hidden');
+      
+      // Update pro badge near email
+      document.getElementById('proBadge').classList.remove('hidden');
+      
+      // Unlock all styles
+      document.querySelectorAll('.pro-only').forEach(opt => {
+        opt.disabled = false;
+        opt.textContent = opt.textContent.replace('🔒 Pro', '✓ Pro');
+      });
+      
+      // Update plan buttons
+      document.getElementById('freePlanBtn').textContent = 'Free';
+      document.getElementById('proPlanBtn').textContent = 'Current Plan';
+      document.getElementById('proPlanBtn').disabled = true;
+      document.getElementById('proPlanBtn').classList.add('opacity-60', 'cursor-not-allowed');
+      
+      // Hide limit warning
+      document.getElementById('limitWarning').classList.add('hidden');
+    }
+
+    // ============ TOOL FUNCTIONS ============
     function updateStats() {
       const text = document.getElementById('input').value;
       const words = text.split(/\s+/).filter(w => w.length > 0).length;
       const chars = text.length;
       document.getElementById('stats').textContent = words + ' words · ' + chars + ' chars';
-      document.getElementById('limitWarning').classList.toggle('hidden', chars <= 5000);
+      document.getElementById('limitWarning').classList.toggle('hidden', chars <= 5000 || isPro);
     }
     
     const inputEl = document.getElementById('input');
     inputEl.addEventListener('input', updateStats);
     inputEl.addEventListener('beforeinput', updateStats);
     inputEl.addEventListener('paste', function(e) {
-      // Use clipboardData if available for immediate access
       const pasted = (e.clipboardData || window.clipboardData).getData('text');
-      if (pasted) {
-        setTimeout(updateStats, 10);
-      }
+      if (pasted) setTimeout(updateStats, 10);
     });
-    // Fallback: poll every 300ms to catch any missed updates
     setInterval(updateStats, 300);
 
     function showTab(tab) {
@@ -313,8 +507,8 @@
       let score = 70;
       const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
       const lengths = sentences.map(s => s.split(/\s+/).filter(w => w.length > 0).length);
-      const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
-      const variance = lengths.reduce((acc, len) => acc + Math.pow(len - avgLength, 2), 0) / lengths.length;
+      const avgLength = lengths.reduce((a, b) => a + b, 0) / sentences.length;
+      const variance = lengths.reduce((acc, len) => acc + Math.pow(len - avgLength, 2), 0) / sentences.length;
       if (variance > 5) score += 10;
       const contractions = (text.match(/\b\w+'\w+\b/g) || []).length;
       if (contractions > 0) score += 5;
@@ -327,11 +521,6 @@
       return Math.max(0, Math.min(100, score));
     }
 
-    function showPayPalPreview() {
-      trackClick('upgrade');
-      alert("PayPal integration coming soon! We're preparing a secure checkout. Stay tuned.");
-    }
-
     function loadSampleText() {
       const sample = "In today's rapidly evolving digital landscape, it is important to note that artificial intelligence has fundamentally transformed the way we approach content creation. Furthermore, studies have shown that embracing AI-driven solutions can unlock unprecedented opportunities for growth and innovation. In conclusion, by integrating these strategies, businesses can position themselves at the forefront of their respective industries.";
       document.getElementById('input').value = sample;
@@ -339,34 +528,31 @@
     }
 
     async function trackClick(button) {
-      // Fire-and-forget tracking
       try {
         await fetch('/api/track-click', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ button: button })
         });
-      } catch (e) {
-        // Silent fail — tracking should never block user action
-      }
+      } catch (e) {}
     }
 
     async function enhance() {
       const input = document.getElementById('input').value;
       const style = document.getElementById('style').value;
+      const email = document.getElementById('email').value.trim();
       const btn = document.getElementById('enhanceBtn');
       const btnText = document.getElementById('btnText');
       const error = document.getElementById('error');
       const resultSection = document.getElementById('resultSection');
 
       if (!input.trim()) return;
-      if (input.length > 5000) {
-        error.textContent = 'Text too long. Free tier limit: 5000 characters.';
+      if (input.length > 5000 && !isPro) {
+        error.innerHTML = 'Text too long. Free tier limit: 5000 characters/day. <button onclick="showPayPalModal()" class="underline">Upgrade to Pro</button> for unlimited.';
         error.classList.remove('hidden');
         return;
       }
 
-      // Track click
       trackClick('enhance');
 
       btn.disabled = true;
@@ -378,34 +564,59 @@
         const response = await fetch('/api/enhance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: input, style: style })
+          body: JSON.stringify({ text: input, style: style, email: email })
         });
 
         if (!response.ok) {
           const err = await response.json();
-          throw new Error(err.error || 'Failed to enhance text');
+          
+          // Handle specific error codes
+          if (err.code === 'QUOTA_EXCEEDED') {
+            error.innerHTML = err.error + ' <button onclick="showPayPalModal()" class="underline">Upgrade to Pro</button>';
+          } else if (err.code === 'PRO_REQUIRED') {
+            error.innerHTML = err.error + ' <button onclick="showPayPalModal()" class="underline">Upgrade to Pro</button>';
+          } else {
+            error.textContent = err.error || 'Failed to enhance text';
+          }
+          throw new Error(err.error);
         }
 
         const data = await response.json();
+        
+        // If server says user is Pro, update UI
+        if (data.is_pro) {
+          isPro = true;
+          localStorage.setItem('aitextcoach_pro', 'true');
+          if (email) localStorage.setItem('aitextcoach_email', email);
+          updateProUI();
+        }
         
         document.getElementById('beforeText').textContent = input;
         document.getElementById('afterText').textContent = data.result;
         
         const humanLike = calculateHumanLikeScore(data.result);
-        
         document.getElementById('humanScore').textContent = humanLike + '/100';
         document.getElementById('humanBar').style.width = humanLike + '%';
         
         resultSection.classList.remove('hidden');
         showTab('after');
       } catch (err) {
-        error.textContent = err.message || 'Something went wrong. Please try again.';
         error.classList.remove('hidden');
       } finally {
         btn.disabled = false;
         btnText.textContent = 'Enhance My Text';
       }
     }
+
+    // ============ ON LOAD ============
+    // Check localStorage for Pro status
+    if (localStorage.getItem('aitextcoach_pro') === 'true') {
+      isPro = true;
+      updateProUI();
+    }
+    
+    // Initialize app
+    init();
   </script>
 </body>
 </html>
