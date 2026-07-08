@@ -1,0 +1,88 @@
+!/bin/bash
+# PayPal Setup Script for AITextCoach
+
+# ===== 替换这行：把 YOUR_SECRET 改成你的真实 Secret =====
+PAYPAL_SECRET="EC2IkInN7BP-OmHwHGFKsODbMRfz8hb6KKW83ntgiMZH43zQ-H29eI7En_tVPfvXdBfAFTJnzumrXV7O"
+
+# ===== 获取 Access Token =====
+echo "=== 1. 获取 Access Token ==="
+TOKEN=$(curl -s https://api.sandbox.paypal.com/v1/oauth2/token \
+  -H "Accept: application/json" \
+  -H "Accept-Language: en_US" \
+  -u "AeyMyUFXSCS4qKsiQxrhRblS5k8XeQt8Np9x46:${PAYPAL_SECRET}" \
+  -d "grant_type=client_credentials" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+
+if [ -z "$TOKEN" ]; then
+    echo "错误：无法获取 token。请检查 Secret 是否正确。"
+    exit 1
+fi
+
+echo "Token: ${TOKEN:0:30}..."
+
+# ===== 创建产品 =====
+echo ""
+echo "=== 2. 创建产品 ==="
+PRODUCT=$(curl -s -X POST https://api.sandbox.paypal.com/v1/catalogs/products \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d '{
+    "name": "AI Text Coach Pro",
+    "description": "Unlimited AI text humanization",
+    "type": "SERVICE",
+    "category": "SOFTWARE"
+  }')
+
+echo "$PRODUCT"
+PRODUCT_ID=$(echo "$PRODUCT" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+echo "Product ID: $PRODUCT_ID"
+
+if [ -z "$PRODUCT_ID" ]; then
+    echo "错误：无法创建产品。"
+    exit 1
+fi
+
+# ===== 创建订阅计划 =====
+echo ""
+echo "=== 3. 创建订阅计划 ==="
+PLAN=$(curl -s -X POST https://api.sandbox.paypal.com/v1/billing/plans \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -d "{
+    \"product_id\": \"${PRODUCT_ID}\",
+    \"name\": \"Pro Monthly\",
+    \"description\": \"Unlimited access to all writing styles\",
+    \"status\": \"ACTIVE\",
+    \"billing_cycles\": [
+      {
+        \"frequency\": {
+          \"interval_unit\": \"MONTH\",
+          \"interval_count\": 1
+        },
+        \"tenure_type\": \"REGULAR\",
+        \"sequence\": 1,
+        \"total_cycles\": 0,
+        \"pricing_scheme\": {
+          \"fixed_price\": {
+            \"value\": \"9.99\",
+            \"currency_code\": \"USD\"
+          }
+        }
+      }
+    ],
+    \"payment_preferences\": {
+      \"auto_bill_outstanding\": true,
+      \"setup_fee_failure_action\": \"CONTINUE\",
+      \"payment_failure_threshold\": 3
+    }
+  }")
+
+echo "$PLAN"
+PLAN_ID=$(echo "$PLAN" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
+
+echo ""
+echo "===== 保存好这两个 ID ====="
+echo "Product ID: $PRODUCT_ID"
+echo "Plan ID: $PLAN_ID"
+echo "=========================="
+echo ""
+echo "把 Plan ID 配置到 Render.com 环境变量：PAYPAL_PLAN_ID"
