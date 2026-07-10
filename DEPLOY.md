@@ -65,7 +65,7 @@ git push -u origin main
 1. 在 Render 控制台找到你的服务 → **Environment** 标签
 2. 点击 **Add Environment Variable**
 3. Key: `GOOGLE_API_KEY`
-4. Value: 你的 Gemini API Key（`AIzaSyDFdDJ4OkP6P9SmaFufkITGUBMH_r4B7O0`）
+4. Value: 在 Render 环境变量中粘贴你的 Gemini API Key（不要写入 Git）
 5. 点击 **Save**
 
 **为什么这样做？**

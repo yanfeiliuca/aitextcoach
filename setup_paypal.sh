@@ -1,15 +1,15 @@
-!/bin/bash
+#!/bin/bash
 # PayPal Setup Script for AITextCoach
 
 # ===== 替换这行：把 YOUR_SECRET 改成你的真实 Secret =====
-PAYPAL_SECRET="EC2IkInN7BP-OmHwHGFKsODbMRfz8hb6KKW83ntgiMZH43zQ-H29eI7En_tVPfvXdBfAFTJnzumrXV7O"
+PAYPAL_SECRET="${PAYPAL_SECRET:?Set PAYPAL_SECRET in your environment}"
 
 # ===== 获取 Access Token =====
 echo "=== 1. 获取 Access Token ==="
 TOKEN=$(curl -s https://api.sandbox.paypal.com/v1/oauth2/token \
   -H "Accept: application/json" \
   -H "Accept-Language: en_US" \
-  -u "AeyMyUFXSCS4qKsiQxrhRblS5k8XeQt8Np9x46:${PAYPAL_SECRET}" \
+  -u "${PAYPAL_CLIENT_ID:?Set PAYPAL_CLIENT_ID in your environment}:${PAYPAL_SECRET}" \
   -d "grant_type=client_credentials" | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$TOKEN" ]; then

@@ -4,3 +4,7 @@ __pycache__/
 *.pyc
 .DS_Store
 pro_users.json
+response.json
+paypal_response.txt
+token.txt
+*.save

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-PAYPAL_SECRET="EC2IkInN7BP-OmHwHGFKsODbMRfz8hb6KKW83ntgiMZH43zQ-H29eI7En_tVPfvXdBfAFTJnzumrXV7O"
+PAYPAL_SECRET="${PAYPAL_SECRET:?Set PAYPAL_SECRET in your environment}"
 
 echo "=== 测试 Token 获取 ==="
 
 curl -s https://api.sandbox.paypal.com/v1/oauth2/token \
   -H "Accept: application/json" \
   -H "Accept-Language: en_US" \
-  -u "AeyMyUFXSCS4qKsiQxrhRblS5k8XeQt8Np9x46:${PAYPAL_SECRET}" \
+  -u "${PAYPAL_CLIENT_ID:?Set PAYPAL_CLIENT_ID in your environment}:${PAYPAL_SECRET}" \
   -d "grant_type=client_credentials" > response.json
 
 echo "完整返回内容："
