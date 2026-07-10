@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Text Coach - Production Server with PayPal, Quota & PostgreSQL
+AI Text Coach - Production Server with DeepSeek, PayPal, Quota & PostgreSQL
 Compatible with Render.com free tier
 """
 
@@ -223,15 +223,84 @@ def get_stats():
             total[k] = total.get(k, 0) + v
     return t, total, _mem_clicks
 
+# ============ BUDGET CONTROL ============
+BUDGET_FILE = "budget.json"
+MONTHLY_BUDGET = 10.00        # USD
+BUDGET_SOFT_LIMIT = 7.50      # Start limiting
+BUDGET_HARD_LIMIT = 9.50      # Extreme limiting
+BUDGET_STOP_LIMIT = 10.00     # Stop completely
+
+# DeepSeek pricing (per 1M tokens) - DeepSeek V4 Flash approx
+DS_PRICE_INPUT = 0.07         # $0.07 per 1M input tokens
+DS_PRICE_OUTPUT = 0.30        # $0.30 per 1M output tokens
+
+def load_budget():
+    """Load current month's spending"""
+    if os.path.exists(BUDGET_FILE):
+        try:
+            with open(BUDGET_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return {"month": time.strftime("%Y-%m"), "spent": 0.0, "calls": 0}
+
+def save_budget(budget):
+    try:
+        with open(BUDGET_FILE, 'w') as f:
+            json.dump(budget, f, indent=2)
+    except:
+        pass
+
+def check_budget():
+    """Check current budget status. Returns (allowed, mode, spent, message)"""
+    budget = load_budget()
+    current_month = time.strftime("%Y-%m")
+    
+    # Reset if new month
+    if budget.get("month") != current_month:
+        budget = {"month": current_month, "spent": 0.0, "calls": 0}
+        save_budget(budget)
+    
+    spent = budget.get("spent", 0)
+    
+    if spent >= BUDGET_STOP_LIMIT:
+        return False, "stopped", spent, f"Monthly budget exhausted (${spent:.2f}/${BUDGET_STOP_LIMIT:.2f}). Service temporarily unavailable."
+    
+    if spent >= BUDGET_HARD_LIMIT:
+        return True, "extreme_limit", spent, "limited"
+    
+    if spent >= BUDGET_SOFT_LIMIT:
+        return True, "limited", spent, "limited"
+    
+    return True, "normal", spent, "normal"
+
+def record_cost(input_tokens, output_tokens):
+    """Record API call cost and return updated spending"""
+    budget = load_budget()
+    current_month = time.strftime("%Y-%m")
+    
+    if budget.get("month") != current_month:
+        budget = {"month": current_month, "spent": 0.0, "calls": 0}
+    
+    cost = (input_tokens / 1_000_000) * DS_PRICE_INPUT + (output_tokens / 1_000_000) * DS_PRICE_OUTPUT
+    budget["spent"] = budget.get("spent", 0) + cost
+    budget["calls"] = budget.get("calls", 0) + 1
+    save_budget(budget)
+    return budget["spent"]
+
+def estimate_tokens(text):
+    """Rough token estimation (1 token ≈ 4 chars for English)"""
+    return max(1, len(text) // 4)
+
 # ============ API KEYS ============
-API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+DS_API_KEY = os.environ.get("DS_API_KEY", os.environ.get("DEEPSEEK_API_KEY", ""))
 PAYPAL_CLIENT_ID = os.environ.get("PAYPAL_CLIENT_ID", "")
 PAYPAL_CLIENT_SECRET = os.environ.get("PAYPAL_CLIENT_SECRET", "")
 PAYPAL_MODE = os.environ.get("PAYPAL_MODE", "sandbox")
 PAYPAL_PLAN_ID = os.environ.get("PAYPAL_PLAN_ID", "")
 
 PAYPAL_API = "https://api.paypal.com" if PAYPAL_MODE == "live" else "https://api.sandbox.paypal.com"
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
+DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
 
 FREE_DAILY_LIMIT = 5000
 
@@ -293,18 +362,55 @@ Text: {input}""",
 }
 
 
-def call_gemini(text, style):
+def call_deepseek(text, style, budget_mode="normal"):
+    """Call DeepSeek API with budget-aware settings"""
     prompt = PROMPTS.get(style, PROMPTS["casual"]).replace("{input}", text)
-    data = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
-    req = urllib.request.Request(GEMINI_URL, data=data, headers={'Content-Type': 'application/json'}, method='POST')
+    
+    # Budget-aware model selection
+    model = "deepseek-chat"  # Default: DeepSeek V3 (fast, cheap)
+    max_tokens = 2048
+    
+    if budget_mode == "extreme_limit":
+        # Reduce output to save costs
+        max_tokens = 1024
+    
+    data = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a professional writing assistant. Rewrite text according to the user's instructions. Keep the original meaning. Do not add disclaimers or explanations."},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": max_tokens,
+        "temperature": 0.7,
+    }).encode()
+    
+    req = urllib.request.Request(
+        DEEPSEEK_URL,
+        data=data,
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {DS_API_KEY}'
+        },
+        method='POST'
+    )
+    
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read().decode())
-            return result['candidates'][0]['content']['parts'][0]['text'].strip()
+            output = result['choices'][0]['message']['content'].strip()
+            usage = result.get('usage', {})
+            input_tokens = usage.get('prompt_tokens', estimate_tokens(prompt))
+            output_tokens = usage.get('completion_tokens', estimate_tokens(output))
+            
+            # Record cost
+            spent = record_cost(input_tokens, output_tokens)
+            
+            return output, spent
     except urllib.error.HTTPError as e:
-        raise Exception(f"API Error: {e.read().decode()}")
+        error_body = e.read().decode()
+        raise Exception(f"API Error ({e.code}): {error_body}")
     except Exception as e:
-        raise Exception(f"Failed to call Gemini: {str(e)}")
+        raise Exception(f"Failed to call DeepSeek: {str(e)}")
 
 
 def get_client_ip(headers):
@@ -378,10 +484,17 @@ class APIHandler(BaseHTTPRequestHandler):
             })
         elif self.path == '/api/stats':
             today_stats, total, breakdown = get_stats()
+            # Also include budget info
+            _, budget_mode, spent, _ = check_budget()
             self.send_json({
                 "today": today_stats,
                 "total": total,
-                "daily_breakdown": breakdown
+                "daily_breakdown": breakdown,
+                "budget": {
+                    "spent": round(spent, 4),
+                    "limit": MONTHLY_BUDGET,
+                    "mode": budget_mode
+                }
             })
         elif self.path.startswith('/api/check-pro'):
             parsed = urlparse(self.path)
@@ -428,6 +541,17 @@ class APIHandler(BaseHTTPRequestHandler):
                 self.send_json({'error': 'Valid style is required'}, 400)
                 return
 
+            # === BUDGET CHECK ===
+            allowed, budget_mode, spent, budget_msg = check_budget()
+            if not allowed:
+                self.send_json({
+                    'error': budget_msg,
+                    'code': 'BUDGET_EXHAUSTED',
+                    'budget_spent': round(spent, 2),
+                    'budget_limit': MONTHLY_BUDGET
+                }, 503)
+                return
+
             is_pro = is_pro_user(email)
             text_len = len(text)
 
@@ -454,11 +578,24 @@ class APIHandler(BaseHTTPRequestHandler):
             else:
                 remaining = -1
 
-            result = call_gemini(text, style)
+            # === BUDGET MODE LIMITS ===
+            if budget_mode == "extreme_limit" and not is_pro:
+                # In extreme limit mode, only serve Pro users
+                self.send_json({
+                    'error': 'Service temporarily limited due to high demand. Pro users still have full access.',
+                    'code': 'BUDGET_LIMIT',
+                    'budget_spent': round(spent, 2),
+                    'is_pro': False
+                }, 503)
+                return
+
+            result, new_spent = call_deepseek(text, style, budget_mode)
+            
             self.send_json({
                 'result': result,
                 'remaining': remaining,
-                'is_pro': is_pro
+                'is_pro': is_pro,
+                'budget_spent': round(new_spent, 4)
             })
         except Exception as e:
             self.send_json({'error': str(e)}, 500)
@@ -545,12 +682,24 @@ class APIHandler(BaseHTTPRequestHandler):
 
 def run_server():
     port = int(os.environ.get('PORT', 3000))
-    server = HTTPServer(('0.0.0.0', port), APIHandler)
+    
+    # Check budget on startup
+    allowed, mode, spent, msg = check_budget()
+    budget_status = "✅ Normal" if mode == "normal" else ("⚠️ Limited" if mode == "limited" else ("🔴 Extreme" if mode == "extreme_limit" else "🚫 Stopped"))
+    
     print(f"🚀 AI Text Coach running at http://localhost:{port}")
     print(f"💳 PayPal Mode: {PAYPAL_MODE}")
     print(f"🗄️  Database: {'PostgreSQL' if USE_DB else 'JSON (fallback)'}")
+    print(f"🧠 AI: DeepSeek Chat (via OpenAI-compatible API)")
+    print(f"💰 Budget: ${spent:.2f}/${MONTHLY_BUDGET:.2f} — {budget_status}")
+    print(f"   Soft: ${BUDGET_SOFT_LIMIT}, Hard: ${BUDGET_HARD_LIMIT}, Stop: ${BUDGET_STOP_LIMIT}")
     print("⏹️  Press Ctrl+C to stop")
+    
+    if not DS_API_KEY:
+        print("\n⚠️  WARNING: DS_API_KEY not set! Text enhancement will fail.")
+    
     try:
+        server = HTTPServer(('0.0.0.0', port), APIHandler)
         server.serve_forever()
     except KeyboardInterrupt:
         print("\n👋 Server stopped")
