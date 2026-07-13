@@ -333,11 +333,9 @@
     }
 
     function checkProStatus() {
-      const email = localStorage.getItem('aitextcoach_email');
-      if (email) {
-        document.getElementById('email').value = email;
-        // We don't auto-mark Pro here — server will tell us on next enhance call
-      }
+      // Email is intentionally NOT auto-filled from localStorage.
+      // User must enter it each session. Pro status is checked server-side
+      // via /api/check-pro when the email input blurs.
     }
 
     // ============ PAYPAL MODAL ============
@@ -431,8 +429,7 @@
         const data = await res.json();
         
         if (data.success) {
-          localStorage.setItem('aitextcoach_email', email);
-          localStorage.setItem('aitextcoach_pro', 'true');
+          // Do NOT persist email to localStorage — user privacy requirement
           isPro = true;
           
           document.getElementById('payPalSuccess').classList.remove('hidden');
@@ -535,8 +532,7 @@
           
           if (data.is_pro) {
             isPro = true;
-            localStorage.setItem('aitextcoach_email', email);
-            localStorage.setItem('aitextcoach_pro', 'true');
+            // Do NOT persist email to localStorage
             updateProUI();
           }
         } catch (e) {
@@ -660,8 +656,7 @@
         // If server says user is Pro, update UI
         if (data.is_pro) {
           isPro = true;
-          localStorage.setItem('aitextcoach_pro', 'true');
-          if (email) localStorage.setItem('aitextcoach_email', email);
+          // Do NOT persist email to localStorage
           updateProUI();
         }
         
