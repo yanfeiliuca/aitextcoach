@@ -14,6 +14,31 @@ import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
+SITE_URL = "https://aitextcoach.com"
+
+
+def canonical_url_for_path(path):
+    parsed = urlparse(path)
+    request_path = parsed.path or "/"
+    if request_path == "/index.html":
+        request_path = "/"
+    elif request_path in ("/blog", "/blog/"):
+        request_path = "/blog/"
+    elif request_path.endswith("/") and request_path != "/":
+        request_path = request_path.rstrip("/")
+    return f"{SITE_URL}{request_path}"
+
+
+def canonical_url_for_file(filename):
+    if filename == "index.html":
+        return f"{SITE_URL}/"
+    if filename == "blog/index.html":
+        return f"{SITE_URL}/blog/"
+    if filename.startswith("blog/"):
+        return f"{SITE_URL}/{filename}"
+    return None
+
+
 # ============ DATABASE CONFIG ============
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 USE_DB = bool(DATABASE_URL)
@@ -453,6 +478,23 @@ class APIHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
+    def redirect_to(self, target, status=301):
+        self.send_response(status)
+        self.send_header("Location", target)
+        self.end_headers()
+
+    def redirect_canonical_host(self):
+        parsed = urlparse(self.path)
+        path = parsed.path or "/"
+        host = self.headers.get("Host", "").split(":")[0].lower()
+        if host == "www.aitextcoach.com":
+            target = f"{SITE_URL}{path}"
+            if parsed.query:
+                target += f"?{parsed.query}"
+            self.redirect_to(target)
+            return True
+        return False
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -461,14 +503,30 @@ class APIHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if self.redirect_canonical_host():
+            return
+
         if self.path == '/' or self.path == '/index.html':
+            if self.path == '/index.html':
+                self.redirect_to(f"{SITE_URL}/")
+                return
             self.serve_file('index.html', 'text/html')
         elif self.path == '/index-ab-test.html':
             self.serve_file('index-ab-test.html', 'text/html')
         elif self.path == '/blog' or self.path == '/blog/':
+            if self.path == '/blog':
+                self.redirect_to(f"{SITE_URL}/blog/")
+                return
             self.serve_file('blog/index.html', 'text/html')
         elif self.path.startswith('/blog/'):
-            self.serve_file(self.path.lstrip('/'), 'text/html')
+            parsed = urlparse(self.path)
+            if parsed.path.endswith('/'):
+                target = canonical_url_for_path(self.path)
+                if parsed.query:
+                    target += f"?{parsed.query}"
+                self.redirect_to(target)
+                return
+            self.serve_file(parsed.path.lstrip('/'), 'text/html')
         elif self.path == '/sitemap.xml':
             self.serve_file('sitemap.xml', 'application/xml')
         elif self.path == '/robots.txt':
@@ -663,6 +721,13 @@ class APIHandler(BaseHTTPRequestHandler):
         try:
             with open(filename, 'rb') as f:
                 content = f.read()
+            canonical = canonical_url_for_file(filename)
+            if content_type == 'text/html' and canonical and b'rel="canonical"' not in content:
+                content = content.replace(
+                    b'</head>',
+                    f'  <link rel="canonical" href="{canonical}">\n</head>'.encode('utf-8'),
+                    1,
+                )
             self.send_response(200)
             self.send_header('Content-Type', content_type)
             self.send_header('Access-Control-Allow-Origin', '*')
