@@ -569,6 +569,36 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+    def do_HEAD(self):
+        if self.redirect_canonical_host():
+            return
+
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == "/index.html":
+            self.redirect_to(f"{SITE_URL}/")
+        elif path == "/blog":
+            self.redirect_to(f"{SITE_URL}/blog/")
+        elif path == "/":
+            self.serve_file("index.html", "text/html", write_body=False)
+        elif path == "/blog/":
+            self.serve_file("blog/index.html", "text/html", write_body=False)
+        elif path.startswith("/blog/") and path.endswith("/"):
+            target = canonical_url_for_path(path)
+            if parsed.query:
+                target += f"?{parsed.query}"
+            self.redirect_to(target)
+        elif path.startswith("/blog/"):
+            self.serve_file(path.lstrip("/"), "text/html", write_body=False)
+        elif path == "/sitemap.xml":
+            self.serve_file("sitemap.xml", "application/xml", write_body=False)
+        elif path == "/robots.txt":
+            self.serve_file("robots.txt", "text/plain", write_body=False)
+        else:
+            self.send_response(404)
+            self.end_headers()
+
     def do_POST(self):
         if self.path == '/api/enhance':
             self.handle_enhance()
@@ -717,7 +747,7 @@ class APIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json({'error': str(e)}, 500)
 
-    def serve_file(self, filename, content_type):
+    def serve_file(self, filename, content_type, write_body=True):
         try:
             with open(filename, 'rb') as f:
                 content = f.read()
@@ -731,8 +761,10 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', content_type)
             self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Length', str(len(content)))
             self.end_headers()
-            self.wfile.write(content)
+            if write_body:
+                self.wfile.write(content)
         except FileNotFoundError:
             self.send_response(404)
             self.end_headers()
