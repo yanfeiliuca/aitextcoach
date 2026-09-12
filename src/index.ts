@@ -2,7 +2,7 @@
 // All API routes — static files served by Pages
 
 import {
-  isProUser, addProUser, getTodayUsage, addUsage,
+  isProUser, addProUser, removeProUserBySubscriptionId, getTodayUsage, addUsage,
   trackClick, getStats, type Env,
 } from "./db";
 import { callDeepSeek, loadBudget, checkBudget } from "./deepseek";
@@ -30,7 +30,7 @@ function getToday(): string {
 
 async function handleConfig(env: Env): Promise<Response> {
   return jsonResponse({
-    paypalClientId: "AdtYR0zkWzQfqViuiRqDPao6Dp1nwr-nXNNcBG3scWj0BFr3_zUTc-1IsGf95NqDb2gLaD8S20LLaFBl",
+    paypalClientId: env.PAYPAL_CLIENT_ID,
     paypalMode: env.PAYPAL_MODE,
     paypalPlanId: env.PAYPAL_PLAN_ID,
   });
@@ -71,14 +71,22 @@ async function handleEnhance(request: Request, env: Env): Promise<Response> {
   const pro = await isProUser(env.DB, email);
   const todayUsage = await getTodayUsage(env.DB, email);
 
-  // Quota: Free = 500 chars/day, Pro = unlimited
   const FREE_LIMIT = 500;
+  const PRO_LIMIT = 5000;
+
   if (!pro && todayUsage + text.length > FREE_LIMIT) {
     return jsonResponse({
       error: "Daily free limit reached",
       upgrade: true,
       used: todayUsage,
       limit: FREE_LIMIT,
+    }, 429);
+  }
+  if (pro && todayUsage + text.length > PRO_LIMIT) {
+    return jsonResponse({
+      error: "Daily Pro limit reached",
+      used: todayUsage,
+      limit: PRO_LIMIT,
     }, 429);
   }
 
@@ -95,6 +103,7 @@ async function handleEnhance(request: Request, env: Env): Promise<Response> {
     result: dsResult.result,
     style,
     chars_used: todayUsage + text.length,
+    limit: pro ? 5000 : 500,
     pro,
   });
 }
@@ -124,7 +133,7 @@ async function handleActivatePro(request: Request, env: Env): Promise<Response> 
     const authResp = await fetch(`${paypalUrl}/v1/oauth2/token`, {
       method: "POST",
       headers: {
-        "Authorization": `Basic ${btoa(`AdtYR0zkWzQfqViuiRqDPao6Dp1nwr-nXNNcBG3scWj0BFr3_zUTc-1IsGf95NqDb2gLaD8S20LLaFBl:${env.PAYPAL_CLIENT_SECRET}`)}`,
+        "Authorization": `Basic ${btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`)}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: "grant_type=client_credentials",
@@ -175,21 +184,70 @@ async function handleTrackClick(request: Request, env: Env): Promise<Response> {
   return jsonResponse({ success: true });
 }
 
-async function handleDebugAddPro(request: Request, env: Env): Promise<Response> {
-  let body: any;
+async function handlePaypalWebhook(request: Request, env: Env): Promise<Response> {
+  const body = await request.text();
+
+  const transmissionId = request.headers.get("PAYPAL-TRANSMISSION-ID") || "";
+  const transmissionTime = request.headers.get("PAYPAL-TRANSMISSION-TIME") || "";
+  const certUrl = request.headers.get("PAYPAL-CERT-URL") || "";
+  const authAlgo = request.headers.get("PAYPAL-AUTH-ALGO") || "";
+  const transmissionSig = request.headers.get("PAYPAL-TRANSMISSION-SIG") || "";
+
+  const paypalUrl = env.PAYPAL_MODE === "sandbox"
+    ? "https://api.sandbox.paypal.com"
+    : "https://api.paypal.com";
+
   try {
-    body = await request.json();
-  } catch {
-    return jsonResponse({ error: "Invalid JSON" }, 400);
-  }
+    const authResp = await fetch(`${paypalUrl}/v1/oauth2/token`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`)}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    });
 
-  const email = (body.email || "").toLowerCase().trim();
-  if (!email) {
-    return jsonResponse({ error: "Missing email" }, 400);
-  }
+    if (!authResp.ok) return jsonResponse({ error: "PayPal auth failed" }, 500);
+    const { access_token } = await authResp.json() as any;
 
-  await addProUser(env.DB, email, "debug");
-  return jsonResponse({ success: true, email });
+    const verifyResp = await fetch(`${paypalUrl}/v1/notifications/verify-webhook-signature`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        transmission_id: transmissionId,
+        transmission_time: transmissionTime,
+        cert_url: certUrl,
+        auth_algo: authAlgo,
+        transmission_sig: transmissionSig,
+        webhook_id: env.PAYPAL_WEBHOOK_ID,
+        webhook_event: JSON.parse(body),
+      }),
+    });
+
+    if (!verifyResp.ok) return jsonResponse({ error: "Webhook verification failed" }, 400);
+    const verifyData = await verifyResp.json() as any;
+    if (verifyData.verification_status !== "SUCCESS") {
+      return jsonResponse({ error: "Invalid webhook signature" }, 401);
+    }
+
+    const event = JSON.parse(body);
+    const eventType: string = event.event_type || "";
+    const subscriptionId: string = event.resource?.id || event.resource?.billing_agreement_id || "";
+
+    if (
+      (eventType === "BILLING.SUBSCRIPTION.CANCELLED" || eventType === "BILLING.SUBSCRIPTION.PAYMENT.FAILED") &&
+      subscriptionId
+    ) {
+      await removeProUserBySubscriptionId(env.DB, subscriptionId);
+    }
+
+    return jsonResponse({ received: true });
+  } catch (e: any) {
+    return jsonResponse({ error: `Webhook error: ${e.message}` }, 500);
+  }
 }
 
 async function handleCheckPro(request: Request, env: Env): Promise<Response> {
@@ -230,8 +288,8 @@ export default {
       if (url.pathname === "/api/track-click" && method === "POST") {
         return await handleTrackClick(request, env);
       }
-      if (url.pathname === "/api/debug-add-pro" && method === "POST") {
-        return await handleDebugAddPro(request, env);
+      if (url.pathname === "/api/paypal-webhook" && method === "POST") {
+        return await handlePaypalWebhook(request, env);
       }
       if (url.pathname === "/api/check-pro" && method === "GET") {
         return await handleCheckPro(request, env);

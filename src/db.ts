@@ -4,7 +4,9 @@ export interface Env {
   DB: D1Database;
   KV: KVNamespace;
   DS_API_KEY: string;
+  PAYPAL_CLIENT_ID: string;
   PAYPAL_CLIENT_SECRET: string;
+  PAYPAL_WEBHOOK_ID: string;
   PAYPAL_MODE: string;
   PAYPAL_PLAN_ID: string;
 }
@@ -31,6 +33,13 @@ export async function addProUser(db: D1Database, email: string, subscriptionId?:
         subscription_id = COALESCE(EXCLUDED.subscription_id, users.subscription_id)
     `)
     .bind(normalized, subscriptionId || null)
+    .run();
+}
+
+export async function removeProUserBySubscriptionId(db: D1Database, subscriptionId: string): Promise<void> {
+  await db
+    .prepare("UPDATE users SET is_pro = 0 WHERE subscription_id = ?")
+    .bind(subscriptionId)
     .run();
 }
 
