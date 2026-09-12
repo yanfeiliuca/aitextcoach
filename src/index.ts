@@ -68,8 +68,10 @@ async function handleEnhance(request: Request, env: Env): Promise<Response> {
     return jsonResponse({ error: "Text too long (max 5000 chars)" }, 400);
   }
 
+  // Use email if provided, otherwise fall back to IP for quota tracking
+  const quotaKey = email || `ip:${getClientIp(request)}`;
   const pro = await isProUser(env.DB, email);
-  const todayUsage = await getTodayUsage(env.DB, email);
+  const todayUsage = await getTodayUsage(env.DB, quotaKey);
 
   const FREE_LIMIT = 500;
   const PRO_LIMIT = 5000;
@@ -97,7 +99,7 @@ async function handleEnhance(request: Request, env: Env): Promise<Response> {
     return jsonResponse({ error: dsResult.error }, 503);
   }
 
-  await addUsage(env.DB, email, text.length);
+  await addUsage(env.DB, quotaKey, text.length);
 
   return jsonResponse({
     result: dsResult.result,

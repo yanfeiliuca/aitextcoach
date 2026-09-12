@@ -49,12 +49,11 @@ function getToday(): string {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
-export async function getTodayUsage(db: D1Database, email: string | null): Promise<number> {
+export async function getTodayUsage(db: D1Database, key: string): Promise<number> {
   const today = getToday();
-  if (!email) return 0;
   const result = await db
     .prepare("SELECT chars_used FROM usage_stats WHERE email = ? AND usage_date = ?")
-    .bind(email.toLowerCase(), today)
+    .bind(key.toLowerCase(), today)
     .first<{ chars_used: number }>();
   return result ? result.chars_used : 0;
 }
