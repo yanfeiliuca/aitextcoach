@@ -1,0 +1,15 @@
+{
+  "name": "aitextcoach-cf",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260716.1",
+    "typescript": "^5.5.0",
+    "wrangler": "^4.111.0"
+  }
+}

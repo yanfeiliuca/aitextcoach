@@ -1,0 +1,23 @@
+name = "aitextcoach"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "aitextcoach-db"
+database_id = "6326c54b-ecd0-4c93-be67-e8d2cfa0673d"
+
+# KV for budget control and session state
+[[kv_namespaces]]
+binding = "KV"
+id = "d7a5905888bd474e843f23554d565548"
+
+# Environment variables (set via wrangler secret or dash)
+[vars]
+PAYPAL_MODE = "sandbox"
+PAYPAL_PLAN_ID = "P-7SB75295DK0602635NJFH34Q"
+
+# Secrets (not in this file):
+# DS_API_KEY
+# PAYPAL_CLIENT_SECRET

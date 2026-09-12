@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Make AI Text Sound Human: The 5 Tells That Give It Away</title>
+  <meta name="description" content="Learn the 5 dead giveaways of AI writing and how to remove them. Practical techniques to make AI-generated text sound natural, with before/after examples.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#FAF9F6',
+            charcoal: { 900: '#1C1C1E', 800: '#2C2C2E', 700: '#3A3A3C' },
+            rose: { 400: '#C98A8F', 500: '#B76E79', 600: '#9E5661' },
+            ink: '#1A1A1A',
+            muted: '#6B6B6B',
+            line: '#E5E5E5',
+          },
+          fontFamily: {
+            serif: ['Playfair Display', 'Georgia', 'serif'],
+            sans: ['DM Sans', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .font-serif { font-family: 'Playfair Display', Georgia, serif; }
+    .font-sans { font-family: 'DM Sans', system-ui, sans-serif; }
+    article p { margin-bottom: 1.5rem; line-height: 1.75; }
+    article h2 { margin-top: 3rem; margin-bottom: 1.5rem; }
+    article h3 { margin-top: 2rem; margin-bottom: 1rem; }
+    .example-box { border-left: 3px solid #B76E79; padding-left: 1.5rem; margin: 2rem 0; }
+    .label-ai { color: #B76E79; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+    .label-human { color: #1C1C1E; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+  </style>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-CZSYZXPKV1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-CZSYZXPKV1');
+  </script>
+</head>
+<body class="min-h-screen bg-cream font-sans text-ink">
+
+  <!-- Nav -->
+  <nav class="border-b border-line">
+    <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="font-serif text-xl font-semibold tracking-wide">AI Text Coach</a>
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-xs text-muted hover:text-ink transition">Home</a>
+        <a href="/blog" class="text-xs text-ink font-medium">Blog</a>
+      </div>
+    </div>
+  </nav>
+
+  <article class="max-w-3xl mx-auto px-4 py-16">
+    
+    <!-- Header -->
+    <header class="mb-16">
+      <span class="text-xs text-muted tracking-wide">July 9, 2026 · 8 min read</span>
+      <h1 class="font-serif text-4xl sm:text-5xl font-semibold leading-tight mt-4 mb-6">
+        How to Make AI Text Sound Human:<br>The 5 Tells That Give It Away
+      </h1>
+      <p class="text-lg text-muted leading-relaxed">
+        You spent twenty minutes on a prompt. ChatGPT gave you something that looks fine. You paste it, send it, and the reply comes back: <em>"This sounds like AI wrote it."</em>
+      </p>
+      <p class="text-muted mt-4">
+        AI text is not bad writing. It is <strong>too good</strong> — too symmetrical, too balanced, too careful. The problem is not errors. It is the absence of irregularity. This post covers the five patterns that signal "machine" and how to remove them. No theory, only techniques you can apply immediately.
+      </p>
+    </header>
+
+    <!-- Signal 1 -->
+    <h2 class="font-serif text-2xl font-semibold">1. The Connective Tissue Is Too Dense</h2>
+    <p>
+      AI writing overuses transitional words. Not because they are wrong, but because they are <em>safe</em>. "Furthermore," "Moreover," "Additionally," "In conclusion" — these are academic training wheels. When three appear in one paragraph, the reader feels the structure more than the content.
+    </p>
+    <p>
+      Humans do not write this way. We say "plus" or "and" or nothing at all. We let the reader connect the dots.
+    </p>
+    
+    <div class="example-box">
+      <p class="label-ai mb-2">AI Pattern</p>
+      <p class="italic text-muted">"Furthermore, studies have shown that embracing AI-driven solutions can unlock unprecedented opportunities. Moreover, it is important to note that success requires a holistic approach. Additionally, businesses must consider three critical pillars."</p>
+    </div>
+    
+    <div class="example-box">
+      <p class="label-human mb-2">Human Fix</p>
+      <p class="italic">"AI tools can open doors you did not know existed. But the tool is not the point. The point is whether you change how you work after you pick it up. Most people do not."</p>
+    </div>
+    
+    <p><strong>Technique:</strong> Read your paragraph and circle every transition word. If you find more than one, delete the rest. Trust the logic to carry itself.</p>
+
+    <!-- Signal 2 -->
+    <h2 class="font-serif text-2xl font-semibold">2. The Structure Is Perfectly Symmetrical</h2>
+    <p>
+      AI loves lists of three. Every item is the same length. Every item starts with a verb. This is a persuasive technique borrowed from rhetoric, but AI uses it everywhere, even in places where asymmetry would be more convincing.
+    </p>
+    <p>
+      Real writing is lumpy. One point gets two sentences. The next gets a fragment. The third becomes a question. The unevenness is the proof of human attention.
+    </p>
+    
+    <div class="example-box">
+      <p class="label-ai mb-2">AI Pattern</p>
+      <p class="italic text-muted">"To succeed, one must: first, harness data-driven insights; second, foster a culture of adaptation; third, cultivate collaborative synergies."</p>
+    </div>
+    
+    <div class="example-box">
+      <p class="label-human mb-2">Human Fix</p>
+      <p class="italic">"Start with data. Not vanity metrics — the numbers that hurt to look at. Then build habits around them. The third part? There is no third part. Most teams stall at step two."</p>
+    </div>
+    
+    <p><strong>Technique:</strong> If you have three items, make the third one shorter or longer than the others. Or add a fourth that breaks the pattern entirely.</p>
+
+    <!-- Signal 3 -->
+    <h2 class="font-serif text-2xl font-semibold">3. Negative Parallelism Sounds Like a Legal Brief</h2>
+    <p>
+      "It is not merely about X, but rather about Y." "This should not be seen as A, but rather as B." AI uses this construction because it appears frequently in formal writing. But in normal human communication, it is heavy and slow.
+    </p>
+    
+    <div class="example-box">
+      <p class="label-ai mb-2">AI Pattern</p>
+      <p class="italic text-muted">"It is not merely about implementing tools, but rather about embracing a holistic mindset shift."</p>
+    </div>
+    
+    <div class="example-box">
+      <p class="label-human mb-2">Human Fix</p>
+      <p class="italic">"The tools do not matter. What matters is whether you think differently after using them."</p>
+    </div>
+    
+    <p><strong>Technique:</strong> Search for "not merely" and "but rather." Delete both. Make two short sentences. One says what it is not. One says what it is.</p>
+
+    <!-- Signal 4 -->
+    <h2 class="font-serif text-2xl font-semibold">4. Everything Is Sourced to Nothing</h2>
+    <p>
+      "Studies have shown." "Research indicates." "It has been demonstrated that." These phrases create the <em>impression</em> of authority without committing to any actual source. This is not lying — it is vagueness dressed as evidence.
+    </p>
+    <p>
+      Humans do not do this. If we have a study, we name it or we do not mention it. If we have personal experience, we say so directly. The hedging is the tell.
+    </p>
+    
+    <div class="example-box">
+      <p class="label-ai mb-2">AI Pattern</p>
+      <p class="italic text-muted">"Studies have shown that consistent practice leads to improved outcomes in professional environments."</p>
+    </div>
+    
+    <div class="example-box">
+      <p class="label-human mb-2">Human Fix</p>
+      <p class="italic">"I wrote every morning for six months. The first month was garbage. By month four, I could not tell the difference between my Monday writing and my Friday writing."</p>
+    </div>
+    
+    <p><strong>Technique:</strong> Replace every "studies have shown" with either a specific source (name, year, link) or a personal observation. If you have neither, delete the sentence.</p>
+
+    <!-- Signal 5 -->
+    <h2 class="font-serif text-2xl font-semibold">5. The Voice Is Neutral to the Point of Blankness</h2>
+    <p>
+      AI avoids personal pronouns. It avoids opinions. It avoids risk. "One must consider" is not wrong — it is just no one. There is no person behind it.
+    </p>
+    <p>
+      Human writing carries a position. Even when the writer is trying to be objective, you can sense what they believe. The voice has weight.
+    </p>
+    
+    <div class="example-box">
+      <p class="label-ai mb-2">AI Pattern</p>
+      <p class="italic text-muted">"It is essential to recognize that the road ahead requires perseverance, vision, and an unwavering commitment to excellence."</p>
+    </div>
+    
+    <div class="example-box">
+      <p class="label-human mb-2">Human Fix</p>
+      <p class="italic">"I have quit three projects at exactly this stage. The moment when it gets hard but is not yet impressive. This time, I am still here. That is the only difference."</p>
+    </div>
+    
+    <p><strong>Technique:</strong> Count the personal pronouns in your paragraph (I, you, we, my, your). If there are zero, add one. Even a single "I think" or "you know" changes the temperature of the text.</p>
+
+    <!-- When NOT to Humanize -->
+    <h2 class="font-serif text-2xl font-semibold">When You Should NOT Remove These Patterns</h2>
+    <p>
+      Not every AI text needs to sound casual. If your audience is a judge, a grant reviewer, or a medical professional, the formal structure is appropriate. The goal is not to make everything sound like a conversation. The goal is to match the register to the context.
+    </p>
+    <p>
+      <strong>Keep formal when:</strong> The stakes are legal, financial, or academic. The reader needs to trust the objectivity of the text. The format itself is part of the credibility (research paper, regulatory filing, technical specification).
+    </p>
+    <p>
+      <strong>Humanize when:</strong> The reader is a customer, a colleague, a general audience. You need persuasion, not just information. The text is meant to be read, not filed.
+    </p>
+
+    <!-- Practical Application -->
+    <h2 class="font-serif text-2xl font-semibold">How to Apply This Without Spending Hours</h2>
+    <p>
+      You can run through the five signals manually. Most people can spot them after one read. But if you are processing text regularly, there is a faster way.
+    </p>
+    <p>
+      <a href="/" class="text-rose-500 hover:text-rose-600 underline">AI Text Coach</a> converts AI-generated text into five distinct human voices — academic, business, creative, casual, and concise. Each style removes the machine patterns while preserving the meaning. The casual style, for example, applies the techniques above automatically: it breaks symmetry, replaces transitions, inserts personal pronouns, and adds natural rhythm.
+    </p>
+    <p>
+      You paste the text. You choose the style. You get the result. It is not magic — it is a systematic application of the rules described in this post, applied at scale.
+    </p>
+
+    <!-- Summary -->
+    <h2 class="font-serif text-2xl font-semibold">The Short Version</h2>
+    <p>
+      AI text sounds mechanical because it is too perfect. Perfect symmetry. Perfect transitions. Perfect neutrality. The fix is not to add more words. It is to add irregularity — the kind of irregularity that comes from a person making choices in real time.
+    </p>
+    <p>
+      Check your text for the five signals. Fix one. The rest will follow.
+    </p>
+
+    <!-- CTA -->
+    <div class="border-t border-line pt-8 mt-12">
+      <p class="text-muted text-sm">
+        <strong>Try it:</strong> Paste your AI-generated text into <a href="/" class="text-rose-500 hover:text-rose-600 underline">AI Text Coach</a> and see the difference. Free to start. No account required.
+      </p>
+    </div>
+
+  </article>
+
+  <!-- Footer -->
+  <footer class="py-10 px-4 border-t border-line">
+    <div class="max-w-3xl mx-auto text-center">
+      <p class="font-serif text-lg font-semibold mb-2">AI Text Coach</p>
+      <p class="text-xs text-muted mb-4">Make AI writing actually good.</p>
+      <p class="text-xs text-muted">
+        <a href="/" class="hover:text-ink transition">Home</a>
+        <span class="mx-3 text-line">·</span>
+        <a href="/" class="hover:text-ink transition">Tool</a>
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
